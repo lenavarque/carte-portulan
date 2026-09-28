@@ -1,0 +1,114 @@
+<!doctype html>
+<!--
+  Exemple : la carte en fond de page, en deux plans qui défilent moins vite que le texte (parallaxe).
+
+  1. Générez la carte : carte-portulan --natural-earth chemin/vers/natural_earth_vector.zip
+     (elle est écrite dans ../sortie/portulan.svg)
+  2. Servez le projet : python -m http.server   (à la racine du projet)
+  3. Ouvrez http://localhost:8000/exemple/
+  <use> vers un autre fichier ne fonctionne pas en file:// : il faut un serveur.
+-->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Carte portulan : exemple</title>
+<style>
+  :root {
+    /* couleurs de la carte (voir le README pour la liste des variables) */
+    --terre-fond: rgba(228, 227, 222, 0.055);
+    --terre-trait: rgba(228, 227, 222, 0.34);
+    --lac-fond: #111317;
+    --nom-1: rgba(216, 87, 60, 0.62);
+    --nom-2: rgba(228, 227, 222, 0.3);
+    --rhumb-vent: rgba(228, 227, 222, 0.075);
+    --rhumb-demi: rgba(111, 159, 122, 0.15);
+    --rhumb-quart: rgba(216, 87, 60, 0.13);
+    --rose-1: rgba(216, 87, 60, 0.3);
+    --rose-2: rgba(217, 170, 69, 0.22);
+    --rose-trait: rgba(228, 227, 222, 0.12);
+  }
+  body { margin: 0; background: #111317; color: #e4e3de; font: 17px/1.6 Georgia, serif; }
+  main { max-width: 640px; margin: 0 auto; padding: 18vh 24px 60vh; }
+  h1 { font-size: 44px; font-weight: normal; }
+
+  /* Le fond : fixe, derrière la page. Chaque plan est une boîte déplacée (parallaxe) qui contient la carte. */
+  .fond { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+  .plan {
+    position: absolute; left: 0; top: 0; width: 100%;
+    height: calc(100% + var(--course, 0px) * var(--vitesse));
+    will-change: transform;          /* dessinée une fois, puis seulement déplacée : indispensable pour la fluidité */
+  }
+  .plan svg { display: block; width: 100%; height: 100%; }
+  .loin { --vitesse: 0.1; }
+  .pres { --vitesse: 0.2; }
+
+  /* Parallaxe par le navigateur quand il le sait (Chrome, Edge…) ; sinon, le script plus bas prend le relais */
+  @keyframes parallaxe { to { transform: translateY(calc(var(--course, 0px) * var(--vitesse) * -1)); } }
+  @supports (animation-timeline: scroll()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .plan { animation: parallaxe linear both; animation-timeline: scroll(root block); }
+    }
+  }
+</style>
+</head>
+<body>
+<!-- data-vue : longitude, latitude et largeur montrée, en degrés -->
+<div class="fond" data-vue="16 38 44" aria-hidden="true">
+  <div class="plan loin"><svg preserveAspectRatio="xMidYMin slice">
+    <use href="../sortie/portulan.svg#rhumbs"/><use href="../sortie/portulan.svg#roses-noeuds"/>
+  </svg></div>
+  <div class="plan pres"><svg preserveAspectRatio="xMidYMin slice">
+    <use href="../sortie/portulan.svg#terres"/><use href="../sortie/portulan.svg#noms"/>
+  </svg></div>
+</div>
+
+<main>
+  <h1>La Méditerranée</h1>
+  <p>Faites défiler la page : les lignes de rhumb et les côtes glissent derrière le texte, chacune à sa vitesse.</p>
+  <p>La carte est en projection de Mercator, en centièmes de degré. La vue est choisie par l'attribut
+     <code>data-vue</code> du fond, et le script calcule la <code>viewBox</code> et l'épaisseur d'un pixel.</p>
+</main>
+
+<script>
+  const fond = document.querySelector(".fond");
+  const plans = [...fond.querySelectorAll(".plan")];
+
+  // Mercator, en centièmes de degré (comme carte_portulan.projection)
+  const mercator = (lat) => -Math.log(Math.tan(Math.PI / 4 + (Math.max(-72, Math.min(80, lat)) * Math.PI) / 360)) * 18000 / Math.PI;
+
+  function poserVue() {
+    const [lon, lat, largeur] = fond.dataset.vue.split(" ").map(Number);
+    const w = largeur * 100;
+    const x = lon * 100 - w / 2;
+    const y = mercator(lat) - (w * innerHeight) / innerWidth / 2;
+    // viewBox très haute : la largeur seule règle l'échelle, et la carte continue vers le sud pour la parallaxe
+    for (const p of plans) p.querySelector("svg").setAttribute("viewBox", `${x} ${y} ${w} ${w * 12}`);
+    fond.style.setProperty("--trait", `${w / innerWidth}px`);                // 1 pixel à l'écran
+    fond.style.setProperty("--taille-noms", `${(10.5 * w) / innerWidth}px`);
+    fond.style.setProperty("--noms-2", largeur > 40 ? 0 : 1);                  // petits noms seulement de près
+  }
+
+  // hauteur de défilement de la page : la distance que parcourt chaque plan
+  const majCourse = () => fond.style.setProperty("--course", `${document.documentElement.scrollHeight - innerHeight}px`);
+
+  // relais pour les navigateurs sans animations liées au défilement (Firefox, par exemple)
+  if (!CSS.supports("animation-timeline: scroll()") && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    const vitesses = plans.map((p) => parseFloat(getComputedStyle(p).getPropertyValue("--vitesse")));
+    let attente = false;
+    addEventListener("scroll", () => {
+      if (attente) return;
+      attente = true;
+      requestAnimationFrame(() => {
+        attente = false;
+        plans.forEach((p, i) => (p.style.transform = `translateY(${-scrollY * vitesses[i]}px)`));
+      });
+    }, { passive: true });
+  }
+
+  poserVue();
+  majCourse();
+  addEventListener("resize", () => { poserVue(); majCourse(); });
+</script>
+</body>
+</html>

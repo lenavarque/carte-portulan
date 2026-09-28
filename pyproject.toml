@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "carte-portulan"
+version = "0.1.0"
+description = "Dessine une carte du monde à la manière des portulans (côtes, noms des ports, lignes de rhumb, roses des vents), en SVG, d'après Natural Earth."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "lenavarque", email = "contact@leportulan.fr" }]
+requires-python = ">=3.10"
+dependencies = []
+keywords = ["portulan", "portolan", "carte", "cartographie", "svg", "natural-earth", "rhumb", "rose des vents"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "Natural Language :: French",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Multimedia :: Graphics",
+    "Topic :: Scientific/Engineering :: GIS",
+]
+
+[project.urls]
+Homepage = "https://leportulan.fr"
+Source = "https://github.com/lenavarque/carte-portulan"
+Issues = "https://github.com/lenavarque/carte-portulan/issues"
+Changelog = "https://github.com/lenavarque/carte-portulan/blob/main/CHANGELOG.md"
+
+[project.scripts]
+carte-portulan = "carte_portulan.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

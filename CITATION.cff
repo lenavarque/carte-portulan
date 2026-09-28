@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "Si vous utilisez ce programme dans un travail publié, vous pouvez le citer ainsi."
+title: "Carte portulan"
+abstract: "Dessine une carte du monde à la manière des portulans (côtes, noms des ports, lignes de rhumb, roses des vents), en SVG, d'après Natural Earth."
+type: software
+authors:
+  - alias: lenavarque
+    email: contact@leportulan.fr
+    website: "https://leportulan.fr"
+version: 0.1.0
+date-released: 2026-09-28
+license: MIT
+repository-code: "https://github.com/lenavarque/carte-portulan"
+url: "https://leportulan.fr"
+keywords:
+  - portulan
+  - portolan
+  - cartographie
+  - svg
+  - natural earth
