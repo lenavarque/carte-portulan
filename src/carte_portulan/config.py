@@ -20,20 +20,30 @@ class Config:
 
     # Noms des ports
     champ_nom: str = "NAME_FR"                               # champ de Natural Earth pour le nom (sinon NAME)
-    rang_max_ports_detail: int = 7                           # « SCALERANK » des villes gardées dans la zone détaillée…
-    rang_max_ports_monde: int = 3                            # … et ailleurs (les capitales le sont toujours)
+    rang_max_ports_detail: int = 9                           # « SCALERANK » des villes gardées dans la zone détaillée…
+    rang_max_ports_monde: int = 5                            # … et ailleurs (les capitales le sont toujours)
     rang_max_grands_ports: int = 2                           # écrits en rouge (avec les capitales)
     distance_cote_detail: float = 0.20                       # distance maximale à la côte, en degrés
     distance_cote_monde: float = 0.35
     ecart_grands_ports: float = 0.75                         # écart minimal entre deux noms le long de la côte
-    ecart_petits_ports: float = 0.26
+    ecart_petits_ports: float = 0.15
     decalage_nom: float = 0.06                               # le nom commence un peu à l'intérieur des terres
 
-    # Réseaux de rhumbs : (longitude, latitude, rayon du cercle des 16 roses), en degrés
+    # Villes dessinées : un petit château pour les grands ports de la zone détaillée, comme sur les portulans
+    chateaux: bool = True
+    taille_chateau: float = 0.30                             # hauteur du château, en degrés, si la page ne fixe
+                                                             # pas --echelle-villes (voir le README)
+
+    # Réseaux de rhumbs : (longitude, latitude, rayon du cercle des 16 roses), en degrés. Comme sur les portulans,
+    # peu de réseaux mais grands : la rose centrale trace les 32 vents, les 16 roses du cercle 16 directions.
     systemes: list[tuple[float, float, float]] = field(default_factory=lambda: [
-        (17, 38, 15), (-21, 40, 15), (56, 38, 15), (98, 42, 17), (136, 28, 17), (-78, 22, 18),
-        (-26, -18, 17), (62, -12, 17), (-135, -32, 18), (158, -28, 17), (-150, 30, 18)])
-    portee: float = 2.6                                      # longueur des lignes de part et d'autre, en rayons
+        (17, 38, 20), (-32, 44, 22), (72, 40, 24), (125, 28, 22), (70, -18, 24), (-80, 14, 26),
+        (-22, -26, 24), (-138, -30, 26), (-150, 28, 24), (160, -22, 24)])
+    portee: float = 3.0                                      # longueur des lignes de part et d'autre, en rayons
+    variation_longueur: float = 0.3                          # chaque ligne s'arrête à ± 30 % de la portée
+    irregularite: float = 0.25                               # écart d'angle d'une ligne tracée « à la main », en degrés
+    lignes_manquantes: float = 0.25                          # part des lignes des roses du cercle non tracées
+    graine: int = 1375                                       # graine du hasard : la même carte à chaque génération
 
     # Rose centrale : la grande rose dessinée au centre d'un réseau de rhumbs (longitude, latitude, rayon en degrés),
     # groupe « rose-centrale » ; None pour ne pas la dessiner. Par défaut, au centre du réseau de la Méditerranée.

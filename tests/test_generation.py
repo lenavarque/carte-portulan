@@ -31,7 +31,8 @@ class TestGeneration(unittest.TestCase):
         return self.racine.find(f".//*[@id='{identifiant}']")
 
     def test_groupes(self):
-        for identifiant in ("terres", "noms", "rhumbs", "roses-noeuds", "roses", "rose-centrale", "petite-rose", "rose-ornee"):
+        for identifiant in ("terres", "noms", "villes", "rhumbs", "roses-noeuds", "roses", "rose-centrale", "petite-rose", "rose-ornee",
+                           "chateau"):
             self.assertIsNotNone(self.groupe(identifiant), identifiant)
 
     def test_rose_centrale(self):
@@ -45,6 +46,17 @@ class TestGeneration(unittest.TestCase):
         self.assertIn("Caleta & Mar", textes)                # sinon le nom d'origine, correctement échappé
         self.assertNotIn("Loin", textes)                     # trop loin de toute côte
         self.assertEqual(self.carte.nombre_noms, (1, 1))
+
+    def test_villes(self):
+        self.assertEqual(self.carte.nombre_villes, 1)             # le grand port de la zone détaillée
+        self.assertEqual(len(self.groupe("villes")), 1)
+        sans = generer(Source(self.dossier), Config(chateaux=False))
+        self.assertEqual(sans.nombre_villes, 0)
+
+    def test_meme_carte_a_chaque_fois(self):
+        self.assertEqual(generer(Source(self.dossier), Config()).svg, self.carte.svg)
+        autre = generer(Source(self.dossier), Config(graine=7)).svg
+        self.assertNotEqual(autre, self.carte.svg)                # la graine change le tracé des rhumbs
 
     def test_terres(self):
         chemins = [p.get("d") for p in self.groupe("terres").iter(f"{SVG}path")]

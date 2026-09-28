@@ -59,7 +59,7 @@
     <use href="../sortie/portulan.svg#rhumbs"/><use href="../sortie/portulan.svg#roses-noeuds"/>
   </svg></div>
   <div class="plan pres"><svg preserveAspectRatio="xMidYMin slice">
-    <use href="../sortie/portulan.svg#terres"/><use href="../sortie/portulan.svg#noms"/>
+    <use href="../sortie/portulan.svg#terres"/><use href="../sortie/portulan.svg#villes"/><use href="../sortie/portulan.svg#noms"/>
   </svg></div>
 </div>
 
@@ -86,6 +86,7 @@
     for (const p of plans) p.querySelector("svg").setAttribute("viewBox", `${x} ${y} ${w} ${w * 12}`);
     fond.style.setProperty("--trait", `${w / innerWidth}px`);                // 1 pixel à l'écran
     fond.style.setProperty("--taille-noms", `${(10.5 * w) / innerWidth}px`);
+    fond.style.setProperty("--echelle-villes", (17 / 33) * (w / innerWidth));    // châteaux de 17 px de haut
     fond.style.setProperty("--noms-2", largeur > 40 ? 0 : 1);                  // petits noms seulement de près
   }
 

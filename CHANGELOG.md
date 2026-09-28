@@ -9,11 +9,18 @@ et les numéros de version suivent le [versionnage sémantique](https://semver.o
 
 - Rose centrale (groupe `rose-centrale`, réglage `rose_centrale`) : une grande rose au centre du réseau de rhumbs
   de la Méditerranée, d'où partent les lignes.
+- Villes dessinées (groupe `villes`, réglages `chateaux` et `taille_chateau`) : un petit château devant le nom
+  des grands ports de la zone détaillée. Sa taille à l'écran se règle avec `--echelle-villes`, ses couleurs avec
+  `--ville-trait`, `--ville-fond` et `--ville-toit`.
 - Démonstration en ligne sur GitHub Pages : la carte en plein écran, à déplacer et zoomer, avec des vues prêtes,
   des couches à masquer et la vue gardée dans l'adresse. Générée et publiée par un workflow à chaque envoi.
 
 ### Modifié
 
+- Les rhumbs sont moins nombreux et tracés comme à la main (réglages `variation_longueur`, `irregularite`,
+  `lignes_manquantes` et `graine`) : angle un peu inégal, longueur et intensité variables, quelques lignes absentes.
+  Les roses du cercle tracent 16 directions au lieu de 32 ; dix réseaux, plus grands, au lieu de onze.
+- Plus de noms de ports (`rang_max_ports_detail` passe à 9), les petits un peu plus petits.
 - La grande rose est gravée à l'encre : deux couleurs, branches hachurées, anneau gradué, noms des vents en
   toutes lettres. Nouvelles variables CSS `--rose-encre` et `--rose-papier` ; `--rose-3` et `--rose-4` ne servent
   plus, `--rose-2` ne sert plus qu'aux petites roses du réseau.

@@ -23,8 +23,12 @@ jusqu'aux îles de l'Égée.
   autour de la Méditerranée et de l'Europe, moyennes (1/50 000 000) ailleurs, et les grands lacs.
 - **Les noms des ports**, écrits comme sur les portulans : perpendiculaires à la côte, vers l'intérieur des terres.
   Les plus importants (grandes villes et capitales) sont dans une couleur à part, le rouge sur les portulans.
-- **Les réseaux de rhumbs** : autour d'une rose centrale, 16 roses sur un cercle, et de chacune partent les 32 vents,
-  en trois encres (vents principaux, demi-vents, quarts de vent).
+- **Les villes** : un petit château (muraille, tour, fanion) devant le nom des grands ports de la zone détaillée,
+  comme les vignettes des portulans.
+- **Les réseaux de rhumbs** : autour d'une rose centrale, qui trace les 32 vents, 16 roses sur un cercle, qui en
+  tracent 16, en trois encres (vents principaux, demi-vents, quarts de vent). Les lignes sont tracées comme à la
+  main : angle un peu inégal, longueur et intensité variables, quelques-unes absentes. Le hasard est réglé par une
+  graine : la même carte à chaque génération.
 - **Les roses des vents** : des petites aux nœuds du réseau, une grande rose au centre du réseau de la Méditerranée,
   et quelques autres en haute mer. Elles sont gravées à l'encre : branches hachurées, anneau gradué, noms des vents
   méditerranéens en toutes lettres (Tramontana, Greco, Levante…), fleur de lys au nord et croix au levant.
@@ -99,6 +103,7 @@ la partie du monde à montrer. Ici, la Méditerranée (centrée sur 24° E, 38°
   <use href="portulan.svg#rhumbs"/>
   <use href="portulan.svg#roses-noeuds"/>
   <use href="portulan.svg#terres"/>
+  <use href="portulan.svg#villes"/>
   <use href="portulan.svg#noms"/>
   <use href="portulan.svg#roses"/>
   <use href="portulan.svg#rose-centrale"/>
@@ -124,6 +129,9 @@ Toutes les couleurs et épaisseurs viennent de variables CSS, héritées à trav
 | `--nom-1`, `--nom-2` | couleur des grands ports et des autres |
 | `--taille-noms` | taille des noms, en unités de la carte (par exemple 10,5 × `--trait`) |
 | `--noms-1`, `--noms-2` | opacité des grands et des petits noms (à baisser quand la vue est large) |
+| `--echelle-villes` | échelle des châteaux, un nombre : hauteur voulue en pixels ÷ 33 × `--trait` (sans unité) ; sinon ils font `taille_chateau` degrés |
+| `--ville-trait`, `--ville-fond`, `--ville-toit` | trait, remplissage et toit (et fanion) des châteaux |
+| `--villes` | opacité des châteaux |
 | `--rhumb-vent`, `--rhumb-demi`, `--rhumb-quart` | les trois encres des lignes de rhumb |
 | `--rhumbs-cercles` | opacité des réseaux secondaires (à mettre à 0 sur une vue du monde entier) |
 | `--rose-encre`, `--rose-1`, `--rose-papier` | grandes roses : traits et hachures, cinabre, face claire des branches |
@@ -131,7 +139,7 @@ Toutes les couleurs et épaisseurs viennent de variables CSS, héritées à trav
 | `--rose-centrale`, `--grandes-roses` | opacité de la rose centrale et des autres grandes roses |
 
 Les traits n'utilisent pas `vector-effect: non-scaling-stroke`, qui ralentit beaucoup le navigateur quand la vue
-change : c'est à la page de recalculer `--trait` et `--taille-noms` quand elle zoome.
+change : c'est à la page de recalculer `--trait`, `--taille-noms` et `--echelle-villes` quand elle zoome.
 
 ## Réglages
 
@@ -147,7 +155,9 @@ Un fichier JSON passé à `--config` remplace les réglages par défaut (positio
 ```
 
 Les principaux réglages : `boite_detail` (zone aux côtes détaillées : ouest, sud, est, nord), `systemes` (réseaux
-de rhumbs : longitude, latitude, rayon), `portee` (longueur des lignes, en rayons), `rose_centrale` (longitude,
+de rhumbs : longitude, latitude, rayon), `portee` (longueur des lignes, en rayons), `variation_longueur`,
+`irregularite` et `lignes_manquantes` (le tracé « à la main »), `graine` (le hasard), `chateaux` (dessiner ou non les
+châteaux), `rose_centrale` (longitude,
 latitude, rayon, ou `null`), `grandes_roses` (longitude, latitude, taille), `champ_nom` (champ du nom des villes : `NAME_FR`, `NAME_EN`, `NAME_ES`…), `rang_max_ports_detail`
 et `rang_max_ports_monde` (quelles villes nommer), `lat_min` et `lat_max`. La liste complète, avec les valeurs par
 défaut, est dans [config.py](src/carte_portulan/config.py).
@@ -184,8 +194,8 @@ notés dans [CHANGELOG.md](CHANGELOG.md).
 ## In English
 
 *carte-portulan* draws a world map in the style of medieval portolan charts, as an SVG file styled with CSS
-custom properties: coastlines from Natural Earth, port names written perpendicular to the coast, networks of rhumb
-lines (32 winds around 16 roses on a circle) and compass roses, in a Mercator projection where rhumb lines are
+custom properties: coastlines from Natural Earth, port names written perpendicular to the coast, networks of hand-drawn-looking rhumb
+lines around roses on a circle, small castles for the main ports, and compass roses, in a Mercator projection where rhumb lines are
 straight. Pure Python 3.10+, no dependencies.
 
 ```bash

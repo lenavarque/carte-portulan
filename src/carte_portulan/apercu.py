@@ -21,6 +21,9 @@ THEME = """
   --rose-2: rgba(217, 170, 69, 0.22);
   --rose-trait: rgba(228, 227, 222, 0.12);
   --grandes-roses: 0.15;
+  --ville-trait: rgba(228, 227, 222, 0.55);
+  --ville-fond: #111317;
+  --ville-toit: rgba(216, 87, 60, 0.75);
 """
 
 
@@ -30,8 +33,10 @@ def reglages_vue(largeur_degres: float, largeur_px: float) -> dict[str, str]:
     return {
         "--trait": f"{w / largeur_px:.3f}px",
         "--taille-noms": f"{10.5 * w / largeur_px:.2f}px",
+        "--echelle-villes": f"{17 / 33 * w / largeur_px:.4f}",      # châteaux de 17 px de haut (33 unités)
         "--noms-1": "0" if largeur_degres > 150 else "1",
-        "--noms-2": "0" if largeur_degres > 40 else "1",
+        "--noms-2": "0" if largeur_degres > 60 else "1",
+        "--villes": "0" if largeur_degres > 90 else "1",
         "--rhumbs-cercles": "0" if largeur_degres > 160 else "1",
     }
 
@@ -55,7 +60,7 @@ html, body {{ margin: 0; background: #111317; }}
 <body>
 <div class="reserve">{svg}</div>
 <svg class="carte" style="{variables}" viewBox="{x:.1f} {y:.1f} {w:.1f} {h:.1f}" preserveAspectRatio="xMidYMid slice">
-  <use href="#rhumbs"/><use href="#roses-noeuds"/><use href="#terres"/><use href="#noms"/><use href="#roses"/><use href="#rose-centrale" style="--rose-1:#d8573c;--rose-encre:rgba(228,227,222,.8)"/>
+  <use href="#rhumbs"/><use href="#roses-noeuds"/><use href="#terres"/><use href="#villes"/><use href="#noms"/><use href="#roses"/><use href="#rose-centrale" style="--rose-1:#d8573c;--rose-encre:rgba(228,227,222,.8)"/>
 </svg>
 </body>
 </html>

@@ -24,6 +24,9 @@
     --rose-1: rgba(216, 87, 60, 0.4);
     --rose-2: rgba(217, 170, 69, 0.3);
     --rose-trait: rgba(228, 227, 222, 0.15);
+    --ville-trait: rgba(228, 227, 222, 0.55);
+    --ville-fond: #111317;
+    --ville-toit: rgba(216, 87, 60, 0.75);
     --grandes-roses: 0.2;
     color-scheme: dark;
   }
@@ -57,7 +60,7 @@
   <div class="couche" id="couche">
     <svg id="carte" preserveAspectRatio="xMidYMid slice">
       <use id="u-rhumbs" href="portulan.svg#rhumbs"/><use id="u-noeuds" href="portulan.svg#roses-noeuds"/>
-      <use href="portulan.svg#terres"/><use id="u-noms" href="portulan.svg#noms"/><use id="u-roses" href="portulan.svg#roses"/><use id="u-centrale" href="portulan.svg#rose-centrale" style="--rose-1:#d8573c;--rose-encre:rgba(228,227,222,.8)"/>
+      <use href="portulan.svg#terres"/><use id="u-villes" href="portulan.svg#villes"/><use id="u-noms" href="portulan.svg#noms"/><use id="u-roses" href="portulan.svg#roses"/><use id="u-centrale" href="portulan.svg#rose-centrale" style="--rose-1:#d8573c;--rose-encre:rgba(228,227,222,.8)"/>
     </svg>
   </div>
 </div>
@@ -67,7 +70,7 @@
   <p>Le monde à la manière des portulans. Glissez pour déplacer, molette ou pincement pour zoomer.</p>
   <div class="vues" id="vues"></div>
   <label><input type="checkbox" data-couche="u-rhumbs,u-noeuds" checked> Rhumbs</label>
-  <label><input type="checkbox" data-couche="u-noms" checked> Noms</label>
+  <label><input type="checkbox" data-couche="u-noms,u-villes" checked> Noms et villes</label>
   <label><input type="checkbox" data-couche="u-roses,u-centrale" checked> Roses</label>
   <div class="liens">
     <a href="https://github.com/lenavarque/carte-portulan">Code source</a> ·
@@ -99,8 +102,10 @@
     const s = carte.style;
     s.setProperty("--trait", `${v.w / W}px`);                         // un pixel à l'écran
     s.setProperty("--taille-noms", `${(11 * v.w) / W}px`);
+    s.setProperty("--echelle-villes", (18 / 33) * (v.w / W));                 // châteaux de 18 px de haut
     s.setProperty("--noms-1", degres > 150 ? 0 : 1);
-    s.setProperty("--noms-2", degres > 40 ? 0 : 1);
+    s.setProperty("--noms-2", degres > 60 ? 0 : 1);
+    s.setProperty("--villes", degres > 90 ? 0 : 1);
     s.setProperty("--rhumbs-cercles", degres > 160 ? 0 : 1);
     t = { x: 0, y: 0, s: 1 };
     couche.style.transform = "";
