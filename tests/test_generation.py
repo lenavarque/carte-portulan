@@ -31,8 +31,13 @@ class TestGeneration(unittest.TestCase):
         return self.racine.find(f".//*[@id='{identifiant}']")
 
     def test_groupes(self):
-        for identifiant in ("terres", "noms", "rhumbs", "roses-noeuds", "roses", "petite-rose", "rose-ornee"):
+        for identifiant in ("terres", "noms", "rhumbs", "roses-noeuds", "roses", "rose-centrale", "petite-rose", "rose-ornee"):
             self.assertIsNotNone(self.groupe(identifiant), identifiant)
+
+    def test_rose_centrale(self):
+        self.assertEqual(len(self.groupe("rose-centrale")), 1)
+        sans = ET.fromstring(generer(Source(self.dossier), Config(rose_centrale=None)).svg)
+        self.assertEqual(len(sans.find(".//*[@id='rose-centrale']")), 0)
 
     def test_noms_des_ports(self):
         textes = [t.text for t in self.groupe("noms").iter(f"{SVG}text")]
@@ -54,7 +59,9 @@ class TestGeneration(unittest.TestCase):
     def test_rose(self):
         self.assertTrue(rose_ornee().startswith('<g id="rose-ornee">'))
         self.assertTrue(rose_ornee(None).startswith("<g>"))
-        ET.fromstring(rose_ornee_autonome())
+        textes = [t.text for t in ET.fromstring(rose_ornee_autonome()).iter(f"{SVG}text")]
+        self.assertEqual(textes[0], "Tramontana")
+        self.assertEqual(len(textes), 8)
 
 
 class TestConfig(unittest.TestCase):

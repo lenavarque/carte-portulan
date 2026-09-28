@@ -25,8 +25,9 @@ jusqu'aux îles de l'Égée.
   Les plus importants (grandes villes et capitales) sont dans une couleur à part, le rouge sur les portulans.
 - **Les réseaux de rhumbs** : autour d'une rose centrale, 16 roses sur un cercle, et de chacune partent les 32 vents,
   en trois encres (vents principaux, demi-vents, quarts de vent).
-- **Les roses des vents** : des petites aux nœuds du réseau, et de grandes roses ornées (fleur de lys au nord, croix
-  au levant, initiales des vents méditerranéens).
+- **Les roses des vents** : des petites aux nœuds du réseau, une grande rose au centre du réseau de la Méditerranée,
+  et quelques autres en haute mer. Elles sont gravées à l'encre : branches hachurées, anneau gradué, noms des vents
+  méditerranéens en toutes lettres (Tramontana, Greco, Levante…), fleur de lys au nord et croix au levant.
 
 La projection est celle de Mercator : les lignes de rhumb, routes à cap constant, y sont droites, comme sur les
 portulans.
@@ -100,6 +101,7 @@ la partie du monde à montrer. Ici, la Méditerranée (centrée sur 24° E, 38°
   <use href="portulan.svg#terres"/>
   <use href="portulan.svg#noms"/>
   <use href="portulan.svg#roses"/>
+  <use href="portulan.svg#rose-centrale"/>
 </svg>
 ```
 
@@ -124,8 +126,9 @@ Toutes les couleurs et épaisseurs viennent de variables CSS, héritées à trav
 | `--noms-1`, `--noms-2` | opacité des grands et des petits noms (à baisser quand la vue est large) |
 | `--rhumb-vent`, `--rhumb-demi`, `--rhumb-quart` | les trois encres des lignes de rhumb |
 | `--rhumbs-cercles` | opacité des réseaux secondaires (à mettre à 0 sur une vue du monde entier) |
-| `--rose-1`, `--rose-2`, `--rose-3`, `--rose-4`, `--rose-trait`, `--nuit` | couleurs des roses |
-| `--grandes-roses` | opacité des grandes roses ornées |
+| `--rose-encre`, `--rose-1`, `--rose-papier` | grandes roses : traits et hachures, cinabre, face claire des branches |
+| `--rose-1`, `--rose-2`, `--rose-trait` | petites roses du réseau |
+| `--rose-centrale`, `--grandes-roses` | opacité de la rose centrale et des autres grandes roses |
 
 Les traits n'utilisent pas `vector-effect: non-scaling-stroke`, qui ralentit beaucoup le navigateur quand la vue
 change : c'est à la page de recalculer `--trait` et `--taille-noms` quand elle zoome.
@@ -144,8 +147,8 @@ Un fichier JSON passé à `--config` remplace les réglages par défaut (positio
 ```
 
 Les principaux réglages : `boite_detail` (zone aux côtes détaillées : ouest, sud, est, nord), `systemes` (réseaux
-de rhumbs : longitude, latitude, rayon), `portee` (longueur des lignes, en rayons), `grandes_roses` (longitude,
-latitude, taille), `champ_nom` (champ du nom des villes : `NAME_FR`, `NAME_EN`, `NAME_ES`…), `rang_max_ports_detail`
+de rhumbs : longitude, latitude, rayon), `portee` (longueur des lignes, en rayons), `rose_centrale` (longitude,
+latitude, rayon, ou `null`), `grandes_roses` (longitude, latitude, taille), `champ_nom` (champ du nom des villes : `NAME_FR`, `NAME_EN`, `NAME_ES`…), `rang_max_ports_detail`
 et `rang_max_ports_monde` (quelles villes nommer), `lat_min` et `lat_max`. La liste complète, avec les valeurs par
 défaut, est dans [config.py](src/carte_portulan/config.py).
 

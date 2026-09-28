@@ -55,7 +55,7 @@ html, body {{ margin: 0; background: #111317; }}
 <body>
 <div class="reserve">{svg}</div>
 <svg class="carte" style="{variables}" viewBox="{x:.1f} {y:.1f} {w:.1f} {h:.1f}" preserveAspectRatio="xMidYMid slice">
-  <use href="#rhumbs"/><use href="#roses-noeuds"/><use href="#terres"/><use href="#noms"/><use href="#roses"/>
+  <use href="#rhumbs"/><use href="#roses-noeuds"/><use href="#terres"/><use href="#noms"/><use href="#roses"/><use href="#rose-centrale" style="--rose-1:#d8573c;--rose-encre:rgba(228,227,222,.8)"/>
 </svg>
 </body>
 </html>

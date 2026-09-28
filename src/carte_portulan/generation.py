@@ -1,7 +1,7 @@
 """Assemblage de la carte : terres, côtes, lacs, noms des ports, réseaux de rhumbs et roses.
 
 Le SVG produit n'a pas de viewBox : il sert de réserve de groupes, à afficher avec <use> (voir le README).
-Groupes : « terres », « noms », « rhumbs », « roses-noeuds », « roses ». Les couleurs et les épaisseurs viennent
+Groupes : « terres », « noms », « rhumbs », « roses-noeuds », « roses », « rose-centrale ». Les couleurs et les épaisseurs viennent
 de variables CSS, héritées à travers <use> : la page qui affiche la carte les choisit.
 """
 import math
@@ -167,9 +167,12 @@ def generer(source: Source, config: Config | None = None, journal=None) -> Carte
     roses_noeuds = "".join(
         f'<use href="#petite-rose" transform="translate({p["x"]} {p["y"]}) scale({1.5 if p["centre"] else 0.8})"'
         + ("" if p["centre"] else ' style="opacity:var(--rhumbs-cercles,1)"') + "/>" for p in noeuds)
-    grandes = "".join(
-        f'<use href="#rose-ornee" transform="translate({dessin.projeter(lon, lat)[0]:.0f} {dessin.projeter(lon, lat)[1]:.0f}) '
-        f'scale({t * UNITES / 100:.2f})"/>' for lon, lat, t in config.grandes_roses)
+    def rose(lon, lat, taille):
+        x, y = dessin.projeter(lon, lat)
+        return f'<use href="#rose-ornee" transform="translate({x:.0f} {y:.0f}) scale({taille * UNITES / 100:.2f})"/>'
+
+    grandes = "".join(rose(*r) for r in config.grandes_roses)
+    centrale = rose(*config.rose_centrale) if config.rose_centrale else ""
     # Épaisseur des traits en unités de la carte : --trait vaut un pixel à l'écran (à recalculer quand la vue change).
     # « vector-effect: non-scaling-stroke » ferait de même, mais ralentit beaucoup le navigateur.
     trait = "fill:none;stroke-linejoin:round"
@@ -195,6 +198,7 @@ def generer(source: Source, config: Config | None = None, journal=None) -> Carte
 </g>
 <g id="roses-noeuds">{roses_noeuds}</g>
 <g id="roses" style="opacity:var(--grandes-roses,1)">{grandes}</g>
+<g id="rose-centrale" style="opacity:var(--rose-centrale,1)">{centrale}</g>
 </svg>
 """
     return Carte(svg=svg, noeuds=noeuds, nombre_noms=(len(noms[1]), len(noms[2])))

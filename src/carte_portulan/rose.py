@@ -1,30 +1,38 @@
-"""La grande rose des vents ornée, dessinée comme sur les portulans.
+"""La grande rose des vents, gravée à l'encre comme sur les portulans.
 
-32 branches : 4 vents cardinaux (rouge), 4 vents intermédiaires (or), 8 demi-vents (encre pâle), 16 quarts de vent
-(vert). Au nord, une fleur de lys (la tramontane) ; à l'est, une croix (le levant, vers Jérusalem) ; ailleurs, les
-initiales des vents méditerranéens : Grec, Sirocco, Ostro, Libeccio, Ponant, Mistral.
+32 branches en quatre tailles : 4 vents cardinaux, 4 vents intermédiaires, 8 demi-vents, 16 quarts de vent. Chaque
+branche a une face claire (couleur du papier) et une face ombrée par des hachures, à l'encre pâle, ou au cinabre pour
+les huit vents principaux. Autour, un anneau gradué et les noms des vents méditerranéens en toutes lettres
+(Tramontana, Greco, Levante, Scirocco, Ostro, Libeccio, Ponente, Maestro) ; au-delà, une fleur de lys au nord et
+une croix au levant.
 
-La rose tient dans un cercle de rayon 100 (132 avec la fleur de lys et les lettres). Ses couleurs sont des variables
-CSS, avec une valeur par défaut : --rose-1 (rouge), --rose-2 (or), --rose-3 (encre pâle), --rose-4 (vert),
-leurs variantes « -sombre » pour la face ombrée des branches, --rose-trait (anneau) et --nuit (cœur).
+La rose tient dans un cercle de rayon 100 (132 avec les noms, la fleur de lys et la croix). Ses couleurs sont des
+variables CSS, avec une valeur par défaut : --rose-encre (traits et hachures), --rose-1 (cinabre), --rose-papier
+(face claire des branches, par défaut --nuit).
 """
 import math
 
-VERT = ("var(--rose-4, #7fae89)", "var(--rose-4-sombre, #3f5f47)")
-PALE = ("var(--rose-3, #cfcdc6)", "var(--rose-3-sombre, #6c6f75)")
-OR = ("var(--rose-2, #d9aa45)", "var(--rose-2-sombre, #8a6a25)")
-ROUGE = ("var(--rose-1, #d8573c)", "var(--rose-1-sombre, #8e3321)")
-TRAIT = "var(--rose-trait, rgba(228,227,222,.4))"
+ENCRE = "var(--rose-encre, #cfcdc6)"
+ROUGE = "var(--rose-1, #d8573c)"
+PAPIER = "var(--rose-papier, var(--nuit, #111317))"
 
-LYS = ('<g transform="translate(0 -113) scale(.95)" style="fill:var(--rose-1, #d8573c)">'
+# (cap du premier vent, pas, nombre, longueur, demi-largeur, couleur des hachures, écart des hachures)
+BRANCHES = (
+    (11.25, 22.5, 16, 50, 3.4, ENCRE, 1.7),       # quarts de vent
+    (22.5, 45, 8, 66, 5.4, ENCRE, 1.4),           # demi-vents
+    (45, 90, 4, 80, 8.0, ROUGE, 1.25),            # vents intermédiaires
+    (0, 90, 4, 92, 10.5, ROUGE, 1.2),             # vents cardinaux
+)
+VENTS = ("Tramontana", "Greco", "Levante", "Scirocco", "Ostro", "Libeccio", "Ponente", "Maestro")
+
+LYS = ('<g transform="translate(0 -121) scale(.72)" style="fill:{rouge};stroke:none">'
        '<path d="M0-17C6-11 7-4 2.5 3H-2.5C-7-4-6-11 0-17Z"/>'
        '<path d="M-2.5 2C-6-3-9-5-12.5-4.5-15-4-16 0-13.5 1.5-12 .5-10.5 1-9.5 3-8.5 4.5-5.5 5-2.5 4Z"/>'
        '<path d="M2.5 2C6-3 9-5 12.5-4.5 15-4 16 0 13.5 1.5 12 .5 10.5 1 9.5 3 8.5 4.5 5.5 5 2.5 4Z"/>'
        '<rect x="-8" y="3" width="16" height="3.2" rx=".6"/>'
-       '<path d="M-2.4 6.2H2.4L1.4 13H-1.4Z"/></g>')
-CROIX = ('<g transform="translate(113 0)" style="fill:var(--rose-1, #d8573c)">'
-         '<path d="M-2.2-10H2.2V-2.2H10V2.2H2.2V10H-2.2V2.2H-10V-2.2H-2.2Z"/></g>')
-VENTS = (("G", 45), ("S", 135), ("O", 180), ("L", 225), ("P", 270), ("M", 315))
+       '<path d="M-2.4 6.2H2.4L1.4 13H-1.4Z"/></g>').format(rouge=ROUGE)
+CROIX = ('<g transform="translate(122 0) scale(.72)" style="fill:{rouge};stroke:none">'
+         '<path d="M-2.2-10H2.2V-2.2H10V2.2H2.2V10H-2.2V2.2H-10V-2.2H-2.2Z"/></g>').format(rouge=ROUGE)
 
 
 def _point(r: float, cap: float) -> tuple[float, float]:
@@ -33,44 +41,62 @@ def _point(r: float, cap: float) -> tuple[float, float]:
     return r * math.sin(t), -r * math.cos(t)
 
 
-def _f(p: tuple[float, float]) -> str:
-    return f"{p[0]:.2f},{p[1]:.2f}"
+def _f(x: float, y: float) -> str:
+    return f"{x:.2f},{y:.2f}"
 
 
-def _branche(cap: float, longueur: float, largeur: float, clair: str, sombre: str) -> str:
-    """Une branche en deux triangles : face éclairée à gauche, face ombrée à droite."""
-    pointe, gauche, droite = _point(longueur, cap), _point(largeur, cap - 90), _point(largeur, cap + 90)
-    return (f'<polygon points="0,0 {_f(pointe)} {_f(gauche)}" style="fill:{clair}"/>'
-            f'<polygon points="0,0 {_f(pointe)} {_f(droite)}" style="fill:{sombre}"/>')
+def _branche(cap: float, longueur: float, largeur: float, ecart: float) -> tuple[str, str]:
+    """(contour de la branche, hachures de sa face ombrée), en commandes de chemin SVG."""
+    ux, uy = _point(1, cap)                        # vers la pointe
+    px, py = _point(1, cap + 90)                   # vers la face ombrée (à droite, dans le sens horaire)
+    pointe = (ux * longueur, uy * longueur)
+    gauche, droite = (-px * largeur, -py * largeur), (px * largeur, py * largeur)
+    contour = f"M{_f(*gauche)}L{_f(*pointe)}L{_f(*droite)}Z M0,0L{_f(*pointe)}"
+    hachures = []
+    d = ecart * 0.6
+    while d < largeur - 0.25:                      # traits parallèles à l'axe, du centre vers le bord de la face
+        bout = longueur * (1 - d / largeur)
+        x0, y0 = px * d, py * d
+        hachures.append(f"M{_f(x0, y0)}L{_f(x0 + ux * bout, y0 + uy * bout)}")
+        d += ecart
+    return contour, "".join(hachures)
 
 
 def rose_ornee(identifiant: str | None = "rose-ornee") -> str:
     """La rose en fragment SVG <g>, centrée sur l'origine, à placer dans un <svg> ou des <defs>."""
-    morceaux = [f'<circle r="96" style="fill:none;stroke:{TRAIT};stroke-width:1.2"/>'
-                f'<circle r="89" style="fill:none;stroke:{TRAIT};stroke-width:.8"/>'
-                f'<circle r="62" style="fill:none;stroke:{TRAIT};stroke-width:.6"/>']
+    trait = f"fill:none;stroke:{ENCRE};stroke-linejoin:round"
     graduations = []
     for i in range(128):
         cap = i * 360 / 128
-        r1 = 89 if i % 4 == 0 else (92 if i % 2 == 0 else 94)
-        graduations.append(f"M{_f(_point(r1, cap))}L{_f(_point(96, cap))}")
-    morceaux.append(f'<path d="{"".join(graduations)}" style="fill:none;stroke:{TRAIT};stroke-width:.6"/>')
-    for i in range(16):                                   # des plus petites branches aux plus grandes
-        morceaux.append(_branche(11.25 + i * 22.5, 56, 4.2, *VERT))
-    for i in range(8):
-        morceaux.append(_branche(22.5 + i * 45, 70, 6.5, *PALE))
-    for i in range(4):
-        morceaux.append(_branche(45 + i * 90, 80, 9.5, *OR))
-    for i in range(4):
-        morceaux.append(_branche(i * 90, 88, 12, *ROUGE))
-    morceaux.append('<circle r="7" style="fill:var(--nuit, #111317);stroke:var(--rose-2, #d9aa45);stroke-width:1.4"/>'
-                    '<circle r="2.2" style="fill:var(--rose-2, #d9aa45)"/>')
-    lettres = []
-    for lettre, cap in VENTS:
-        x, y = _point(111, cap)
-        lettres.append(f'<text x="{x:.1f}" y="{y + 5.5:.1f}" text-anchor="middle">{lettre}</text>')
-    morceaux.append(LYS + CROIX + '<g style="font-family:Spectral,Georgia,serif;font-weight:600;font-size:16px;'
-                    'fill:var(--rose-3, #cfcdc6)">' + "".join(lettres) + "</g>")
+        r1 = 94 if i % 4 == 0 else (96.5 if i % 2 == 0 else 98)
+        graduations.append(f"M{_f(*_point(r1, cap))}L{_f(*_point(100, cap))}")
+    morceaux = [f'<circle r="100" style="{trait};stroke-width:.8"/>',
+                f'<circle r="94" style="{trait};stroke-width:.5"/>',
+                f'<path d="{"".join(graduations)}" style="{trait};stroke-width:.4"/>',
+                f'<circle r="66" style="{trait};stroke-width:.4;stroke-dasharray:1.5 2"/>']
+    for depart, pas, nombre, longueur, largeur, couleur, ecart in BRANCHES:
+        contours, hachures = [], []
+        for i in range(nombre):
+            c, h = _branche(depart + i * pas, longueur, largeur, ecart)
+            contours.append(c)
+            hachures.append(h)
+        # face claire (couleur du papier, cache les lignes de rhumb dessous), hachures, puis contour
+        morceaux.append(f'<path d="{"".join(c.split(" M0")[0] for c in contours)}" style="fill:{PAPIER};stroke:none"/>')
+        morceaux.append(f'<path d="{"".join(hachures)}" style="fill:none;stroke:{couleur};stroke-width:.45"/>')
+        morceaux.append(f'<path d="{" ".join(contours)}" style="{trait};stroke-width:.55"/>')
+    morceaux.append(f'<circle r="20" style="{trait};stroke-width:.4"/>'
+                    f'<circle r="5" style="fill:{PAPIER};stroke:{ROUGE};stroke-width:.8"/>'
+                    f'<circle r="1.8" style="fill:{ROUGE}"/>')
+    noms = []
+    for i, nom in enumerate(VENTS):
+        cap = i * 45
+        x, y = _point(107, cap)
+        rotation = cap if math.cos(math.radians(cap)) >= -0.01 else cap + 180   # jamais à l'envers
+        noms.append(f'<text transform="translate({x:.2f} {y:.2f}) rotate({rotation:g})" text-anchor="middle" '
+                    f'dy="2.6">{nom}</text>')
+    morceaux.append(f'<g style="font-family:Spectral,Georgia,serif;font-style:italic;font-size:7.5px;'
+                    f'letter-spacing:.08em;fill:{ENCRE}">' + "".join(noms) + "</g>")
+    morceaux.append(LYS + CROIX)
     attribut = f' id="{identifiant}"' if identifiant else ""
     return f"<g{attribut}>" + "".join(morceaux) + "</g>"
 

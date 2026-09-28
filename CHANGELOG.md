@@ -7,8 +7,16 @@ et les numéros de version suivent le [versionnage sémantique](https://semver.o
 
 ### Ajouté
 
+- Rose centrale (groupe `rose-centrale`, réglage `rose_centrale`) : une grande rose au centre du réseau de rhumbs
+  de la Méditerranée, d'où partent les lignes.
 - Démonstration en ligne sur GitHub Pages : la carte en plein écran, à déplacer et zoomer, avec des vues prêtes,
   des couches à masquer et la vue gardée dans l'adresse. Générée et publiée par un workflow à chaque envoi.
+
+### Modifié
+
+- La grande rose est gravée à l'encre : deux couleurs, branches hachurées, anneau gradué, noms des vents en
+  toutes lettres. Nouvelles variables CSS `--rose-encre` et `--rose-papier` ; `--rose-3` et `--rose-4` ne servent
+  plus, `--rose-2` ne sert plus qu'aux petites roses du réseau.
 
 ## [0.1.0] - 2026-09-28
 

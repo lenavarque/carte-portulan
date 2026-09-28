@@ -35,6 +35,10 @@ class Config:
         (-26, -18, 17), (62, -12, 17), (-135, -32, 18), (158, -28, 17), (-150, 30, 18)])
     portee: float = 2.6                                      # longueur des lignes de part et d'autre, en rayons
 
+    # Rose centrale : la grande rose dessinée au centre d'un réseau de rhumbs (longitude, latitude, rayon en degrés),
+    # groupe « rose-centrale » ; None pour ne pas la dessiner. Par défaut, au centre du réseau de la Méditerranée.
+    rose_centrale: tuple[float, float, float] | None = (17, 38, 5.5)
+
     # Grandes roses ornées : (longitude, latitude, taille : rayon en degrés)
     grandes_roses: list[tuple[float, float, float]] = field(default_factory=lambda: [
         (-38, 31, 4.2), (74, -14, 4.8), (-160, 12, 5.0), (-44, -36, 4.2), (170, -40, 4.6), (-12, 5, 3.6)])
@@ -59,8 +63,8 @@ def charger_config(chemin: str | Path | None) -> Config:
     inconnus = set(donnees) - connus
     if inconnus:
         raise ValueError(f"Réglages inconnus dans {chemin} : {', '.join(sorted(inconnus))}")
-    for cle in ("boite_detail",):
-        if cle in donnees:
+    for cle in ("boite_detail", "rose_centrale"):
+        if donnees.get(cle) is not None:
             donnees[cle] = tuple(donnees[cle])
     for cle in ("systemes", "grandes_roses"):
         if cle in donnees:
