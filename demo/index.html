@@ -90,6 +90,7 @@
 
   const vue = document.getElementById("vue"), couche = document.getElementById("couche");
   const carte = document.getElementById("carte"), position = document.getElementById("position");
+  let paliers = [];                                        // seuils des paliers des noms (portulan.json)
   let v;                                                   // vue validée : centre (cx, cy) et largeur visible w
   let t = { x: 0, y: 0, s: 1 };                            // déplacement en cours, avant d'être validé
   let minuterie;
@@ -101,8 +102,10 @@
     const degres = v.w / K;
     const s = carte.style;
     s.setProperty("--trait", `${v.w / W}px`);                         // un pixel à l'écran
-    s.setProperty("--taille-noms", `${(11 * v.w) / W}px`);
-    s.setProperty("--echelle-villes", (18 / 33) * (v.w / W));                 // châteaux de 18 px de haut
+    const taille = (11 * v.w) / W;                                     // taille des noms, en unités de la carte
+    s.setProperty("--taille-noms", `${taille}px`);
+    // seulement les paliers de noms qui tiennent sans se chevaucher à cette taille
+    paliers.forEach((seuil, k) => s.setProperty(`--noms-p${k}`, taille <= seuil ? "visible" : "hidden"));
     s.setProperty("--noms-1", degres > 150 ? 0 : 1);
     s.setProperty("--noms-2", degres > 60 ? 0 : 1);
     s.setProperty("--villes", degres > 90 ? 0 : 1);
@@ -185,6 +188,8 @@
 
   const depuisAdresse = location.hash.slice(1).split(",").map(Number);
   aller(depuisAdresse.length === 3 && depuisAdresse.every(Number.isFinite) ? depuisAdresse : VUES["Méditerranée"]);
+  // les seuils des paliers des noms sont dans portulan.json, à côté de la carte
+  fetch("portulan.json").then((r) => r.json()).then((index) => { paliers = index.paliers || []; poser(v); }).catch(() => {});
 </script>
 </body>
 </html>

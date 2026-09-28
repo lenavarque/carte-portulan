@@ -29,10 +29,13 @@ class Config:
     ecart_petits_ports: float = 0.15
     decalage_nom: float = 0.06                               # le nom commence un peu à l'intérieur des terres
 
+    # Paliers des noms : un nom n'est montré que si la taille des noms (--taille-noms, en unités de la carte) ne
+    # dépasse pas le seuil de son palier ; à chaque palier, les noms visibles ne se chevauchent pas (etiquettes.py)
+    paliers_noms: tuple[float, ...] = (130, 90, 64, 46, 34, 25, 18, 13, 9)
+
     # Villes dessinées : un petit château pour les grands ports de la zone détaillée, comme sur les portulans
     chateaux: bool = True
-    taille_chateau: float = 0.30                             # hauteur du château, en degrés, si la page ne fixe
-                                                             # pas --echelle-villes (voir le README)
+    taille_chateau: float = 1.6                              # hauteur du château, en tailles de nom (em)
 
     # Réseaux de rhumbs : (longitude, latitude, rayon du cercle des 16 roses), en degrés. Comme sur les portulans,
     # peu de réseaux mais grands : la rose centrale trace les 32 vents, les 16 roses du cercle 16 directions.
@@ -41,8 +44,9 @@ class Config:
         (-22, -26, 24), (-138, -30, 26), (-150, 28, 24), (160, -22, 24)])
     portee: float = 3.0                                      # longueur des lignes de part et d'autre, en rayons
     variation_longueur: float = 0.3                          # chaque ligne s'arrête à ± 30 % de la portée
-    irregularite: float = 0.25                               # écart d'angle d'une ligne tracée « à la main », en degrés
-    lignes_manquantes: float = 0.25                          # part des lignes des roses du cercle non tracées
+    irregularite: float = 0.1                                # écart d'angle d'une ligne tracée « à la main », en degrés
+    lignes_manquantes: float = 0.2                           # part des lignes des roses du cercle non tracées
+    ecart_rhumbs: float = 0.3                                # droites parallèles plus proches : tracées une fois
     graine: int = 1375                                       # graine du hasard : la même carte à chaque génération
 
     # Rose centrale : la grande rose dessinée au centre d'un réseau de rhumbs (longitude, latitude, rayon en degrés),
@@ -73,7 +77,7 @@ def charger_config(chemin: str | Path | None) -> Config:
     inconnus = set(donnees) - connus
     if inconnus:
         raise ValueError(f"Réglages inconnus dans {chemin} : {', '.join(sorted(inconnus))}")
-    for cle in ("boite_detail", "rose_centrale"):
+    for cle in ("boite_detail", "rose_centrale", "paliers_noms"):
         if donnees.get(cle) is not None:
             donnees[cle] = tuple(donnees[cle])
     for cle in ("systemes", "grandes_roses"):

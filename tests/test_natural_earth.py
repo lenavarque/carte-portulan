@@ -51,6 +51,13 @@ class TestSource(unittest.TestCase):
                 z.write(couches / f"ne_50m_land.{ext}", f"ne_50m_land.{ext}")
         self.assertEqual(len(Source(telechargements).lire("ne_50m_land")), 1)
 
+    def test_octets_nuls(self):
+        # certaines couches (les pays, en 1/10 000 000) complètent leurs champs par des octets nuls, pas des espaces
+        ecrire_couche(self.dossier, "pays", 1, [(0.0, 0.0)], [("ISO_A2", 5)], [{"ISO_A2": "FR"}])
+        dbf = self.dossier / "pays.dbf"
+        dbf.write_bytes(dbf.read_bytes().replace(b"FR   ", b"FR\0\0\0"))
+        self.assertEqual(Source(self.dossier).lire("pays")[0][1], {"ISO_A2": "FR"})
+
     def test_couche_vide(self):
         ecrire_couche(self.dossier, "vide", 3, [], [("a", 1)], [])
         self.assertEqual(Source(self.dossier).lire("vide"), [])

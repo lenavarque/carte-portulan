@@ -22,13 +22,15 @@ jusqu'aux îles de l'Égée.
 - **Les terres et les côtes**, d'après [Natural Earth](https://www.naturalearthdata.com/) : côtes détaillées (1/10 000 000)
   autour de la Méditerranée et de l'Europe, moyennes (1/50 000 000) ailleurs, et les grands lacs.
 - **Les noms des ports**, écrits comme sur les portulans : perpendiculaires à la côte, vers l'intérieur des terres.
-  Les plus importants (grandes villes et capitales) sont dans une couleur à part, le rouge sur les portulans.
+  Les plus importants (grandes villes et capitales) sont dans une couleur à part, le rouge sur les portulans. Ils ne
+  se chevauchent jamais : chaque nom a un palier de zoom, à partir duquel il a sa place (voir plus bas).
 - **Les villes** : un petit château (muraille, tour, fanion) devant le nom des grands ports de la zone détaillée,
-  comme les vignettes des portulans.
+  comme les vignettes des portulans. Il suit la taille des noms.
 - **Les réseaux de rhumbs** : autour d'une rose centrale, qui trace les 32 vents, 16 roses sur un cercle, qui en
-  tracent 16, en trois encres (vents principaux, demi-vents, quarts de vent). Les lignes sont tracées comme à la
-  main : angle un peu inégal, longueur et intensité variables, quelques-unes absentes. Le hasard est réglé par une
-  graine : la même carte à chaque génération.
+  tracent 16, en trois encres (vents principaux, demi-vents, quarts de vent). Comme sur les portulans, une droite
+  passe souvent par plusieurs roses : elle n'est tracée qu'une fois. Les lignes sont tracées comme à la main : angle
+  un peu inégal, longueur et intensité variables, quelques-unes absentes. Le hasard est réglé par une graine : la
+  même carte à chaque génération.
 - **Les roses des vents** : des petites aux nœuds du réseau, une grande rose au centre du réseau de la Méditerranée,
   et quelques autres en haute mer. Elles sont gravées à l'encre : branches hachurées, anneau gradué, noms des vents
   méditerranéens en toutes lettres (Tramontana, Greco, Levante…), fleur de lys au nord et croix au levant.
@@ -70,7 +72,7 @@ Le programme écrit dans le dossier `sortie` :
 | Fichier | Contenu |
 |---|---|
 | `portulan.svg` | la carte (≈ 600 Ko, ≈ 230 Ko compressée par le serveur) |
-| `portulan.json` | la position des roses du réseau |
+| `portulan.json` | la position des roses du réseau et les seuils des paliers des noms |
 | `rose-ornee.svg` | la grande rose des vents seule |
 | `apercu.html` | une page qui montre la carte, à ouvrir directement dans un navigateur |
 
@@ -129,7 +131,7 @@ Toutes les couleurs et épaisseurs viennent de variables CSS, héritées à trav
 | `--nom-1`, `--nom-2` | couleur des grands ports et des autres |
 | `--taille-noms` | taille des noms, en unités de la carte (par exemple 10,5 × `--trait`) |
 | `--noms-1`, `--noms-2` | opacité des grands et des petits noms (à baisser quand la vue est large) |
-| `--echelle-villes` | échelle des châteaux, un nombre : hauteur voulue en pixels ÷ 33 × `--trait` (sans unité) ; sinon ils font `taille_chateau` degrés |
+| `--noms-p0`, `--noms-p1`… | `visible` ou `hidden` : les paliers des noms (et des châteaux), voir ci-dessous |
 | `--ville-trait`, `--ville-fond`, `--ville-toit` | trait, remplissage et toit (et fanion) des châteaux |
 | `--villes` | opacité des châteaux |
 | `--rhumb-vent`, `--rhumb-demi`, `--rhumb-quart` | les trois encres des lignes de rhumb |
@@ -139,7 +141,22 @@ Toutes les couleurs et épaisseurs viennent de variables CSS, héritées à trav
 | `--rose-centrale`, `--grandes-roses` | opacité de la rose centrale et des autres grandes roses |
 
 Les traits n'utilisent pas `vector-effect: non-scaling-stroke`, qui ralentit beaucoup le navigateur quand la vue
-change : c'est à la page de recalculer `--trait`, `--taille-noms` et `--echelle-villes` quand elle zoome.
+change : c'est à la page de recalculer `--trait`, `--taille-noms` et les paliers quand elle zoome.
+
+### Paliers des noms
+
+Les noms gardent la même taille à l'écran : de loin, ils prennent plus de place sur la carte, et se chevaucheraient.
+Chaque nom reçoit donc un palier, le premier où il a sa place ; les seuils sont dans `portulan.json` (`paliers`,
+réglage `paliers_noms`), en unités de la carte. La page montre le palier *k* (`--noms-pk: visible`) si la taille des
+noms, `--taille-noms`, ne dépasse pas le seuil *k*, et le cache sinon (`hidden`) :
+
+```js
+const taille = 10.5 * largeurVue / largeurEcran;           // taille des noms, en unités de la carte
+paliers.forEach((seuil, k) => svg.style.setProperty(`--noms-p${k}`, taille <= seuil ? "visible" : "hidden"));
+```
+
+À chaque palier, aucun nom visible n'en chevauche un autre, château compris ; en zoomant, les paliers suivants
+s'ajoutent. La largeur des noms est estimée d'après Spectral italique, la police prévue pour la carte.
 
 ## Réglages
 
@@ -156,8 +173,9 @@ Un fichier JSON passé à `--config` remplace les réglages par défaut (positio
 
 Les principaux réglages : `boite_detail` (zone aux côtes détaillées : ouest, sud, est, nord), `systemes` (réseaux
 de rhumbs : longitude, latitude, rayon), `portee` (longueur des lignes, en rayons), `variation_longueur`,
-`irregularite` et `lignes_manquantes` (le tracé « à la main »), `graine` (le hasard), `chateaux` (dessiner ou non les
-châteaux), `rose_centrale` (longitude,
+`irregularite` et `lignes_manquantes` (le tracé « à la main »), `ecart_rhumbs` (deux droites parallèles plus
+proches ne sont tracées qu'une fois), `graine` (le hasard), `paliers_noms` (seuils des paliers des noms), `chateaux`
+et `taille_chateau` (en tailles de nom), `rose_centrale` (longitude,
 latitude, rayon, ou `null`), `grandes_roses` (longitude, latitude, taille), `champ_nom` (champ du nom des villes : `NAME_FR`, `NAME_EN`, `NAME_ES`…), `rang_max_ports_detail`
 et `rang_max_ports_monde` (quelles villes nommer), `lat_min` et `lat_max`. La liste complète, avec les valeurs par
 défaut, est dans [config.py](src/carte_portulan/config.py).

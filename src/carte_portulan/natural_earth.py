@@ -59,7 +59,7 @@ def lire_attributs(octets: bytes, champs: Iterable[str] | None = None,
         ligne, p = {}, entete + i * long_ligne + 1        # 1 : indicateur de suppression
         for nom, taille in descripteurs:
             if voulus is None or nom in voulus:
-                ligne[nom] = octets[p:p + taille].decode(encodage, "replace").strip()
+                ligne[nom] = octets[p:p + taille].decode(encodage, "replace").strip("\0 ")   # espaces ou octets nuls
             p += taille
         lignes.append(ligne)
     return lignes, [d[0] for d in descripteurs]

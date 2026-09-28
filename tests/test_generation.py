@@ -62,6 +62,32 @@ class TestGeneration(unittest.TestCase):
         chemins = [p.get("d") for p in self.groupe("terres").iter(f"{SVG}path")]
         self.assertTrue(all(chemins))
 
+    def test_rhumbs_sans_doublon(self):
+        """Chaque droite n'est tracée qu'une fois : aucune paire presque confondue (même direction, même place)."""
+        import math
+        import re
+        segments = [tuple(map(float, m)) for p in self.groupe("rhumbs").iter(f"{SVG}path")
+                    for m in re.findall(r"M(-?\d+) (-?\d+)L(-?\d+) (-?\d+)", p.get("d"))]
+        self.assertGreater(len(segments), 100)
+
+        def confondues(a, b):
+            ax, ay, bx, by = a
+            cx, cy, dx, dy = b
+            l = math.hypot(bx - ax, by - ay)
+            ux, uy = (bx - ax) / l, (by - ay) / l
+            ecart = max(abs((cx - ax) * uy - (cy - ay) * ux), abs((dx - ax) * uy - (dy - ay) * ux))
+            t = sorted(((cx - ax) * ux + (cy - ay) * uy, (dx - ax) * ux + (dy - ay) * uy))
+            return ecart < 20 and min(l, t[1]) - max(0, t[0]) > 300
+
+        doublons = [(a, b) for i, a in enumerate(segments) for b in segments[:i] if confondues(a, b)]
+        self.assertEqual(doublons, [])
+
+    def test_une_droite_par_corde(self):
+        # un seul réseau, toutes les droites : 16 pour la rose centrale, 48 cordes et 16 tangentes pour le cercle
+        carte = generer(Source(self.dossier), Config(systemes=[(0, 0, 20)], lignes_manquantes=0))
+        rhumbs = ET.fromstring(carte.svg).find(".//*[@id='rhumbs']")
+        self.assertEqual(sum(p.get("d").count("M") for p in rhumbs.iter(f"{SVG}path")), 16 + 48 + 16)
+
     def test_reseaux(self):
         systemes = len(Config().systemes)
         self.assertEqual(len(self.carte.noeuds), systemes * 9)  # rose centrale + une sur deux du cercle

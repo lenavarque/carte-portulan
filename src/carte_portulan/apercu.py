@@ -27,13 +27,16 @@ THEME = """
 """
 
 
-def reglages_vue(largeur_degres: float, largeur_px: float) -> dict[str, str]:
-    """Variables qui dépendent de l'échelle : épaisseur d'un pixel, taille des noms, ce qu'on montre ou cache."""
+def reglages_vue(largeur_degres: float, largeur_px: float, paliers: tuple[float, ...] = ()) -> dict[str, str]:
+    """Variables qui dépendent de l'échelle : épaisseur d'un pixel, taille des noms, ce qu'on montre ou cache.
+    « paliers » : les seuils des paliers des noms (Carte.paliers) ; un palier est montré si la taille des noms, en
+    unités de la carte, ne dépasse pas son seuil."""
     w = largeur_degres * UNITES
+    taille = 10.5 * w / largeur_px
     return {
         "--trait": f"{w / largeur_px:.3f}px",
-        "--taille-noms": f"{10.5 * w / largeur_px:.2f}px",
-        "--echelle-villes": f"{17 / 33 * w / largeur_px:.4f}",      # châteaux de 17 px de haut (33 unités)
+        "--taille-noms": f"{taille:.2f}px",
+        **{f"--noms-p{k}": "visible" if taille <= seuil else "hidden" for k, seuil in enumerate(paliers)},
         "--noms-1": "0" if largeur_degres > 150 else "1",
         "--noms-2": "0" if largeur_degres > 60 else "1",
         "--villes": "0" if largeur_degres > 90 else "1",
@@ -41,9 +44,10 @@ def reglages_vue(largeur_degres: float, largeur_px: float) -> dict[str, str]:
     }
 
 
-def page_apercu(svg: str, lon: float, lat: float, largeur: float, largeur_px: int = 1200, hauteur_px: int = 800) -> str:
+def page_apercu(svg: str, lon: float, lat: float, largeur: float, largeur_px: int = 1200, hauteur_px: int = 800,
+                paliers: tuple[float, ...] = ()) -> str:
     x, y, w, h = vue(lon, lat, largeur, hauteur_px / largeur_px)
-    variables = ";".join(f"{k}:{v}" for k, v in reglages_vue(largeur, largeur_px).items())
+    variables = ";".join(f"{k}:{v}" for k, v in reglages_vue(largeur, largeur_px, paliers).items())
     titre = escape(f"Carte portulan : {lon}°, {lat}°, {largeur}° de large")
     return f"""<!doctype html>
 <html lang="fr">

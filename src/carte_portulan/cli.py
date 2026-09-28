@@ -57,7 +57,7 @@ def main(arguments: list[str] | None = None) -> int:
     (sortie / "portulan.svg").write_text(carte.svg, encoding="utf-8")
     (sortie / "portulan.json").write_text(json.dumps(carte.index(), separators=(",", ":")), encoding="utf-8")
     (sortie / "rose-ornee.svg").write_text(rose_ornee_autonome(), encoding="utf-8")
-    (sortie / "apercu.html").write_text(page_apercu(carte.svg, *args.apercu), encoding="utf-8")
+    (sortie / "apercu.html").write_text(page_apercu(carte.svg, *args.apercu, paliers=carte.paliers), encoding="utf-8")
     taille = (sortie / "portulan.svg").stat().st_size // 1024
     print(f"{sortie / 'portulan.svg'} : {taille} Ko, {carte.nombre_noms[0]} grands ports et "
           f"{carte.nombre_noms[1]} autres, {len(carte.noeuds)} roses du réseau.")
