@@ -10,6 +10,9 @@ dont les couleurs se règlent en CSS, pensé pour servir de fond à une page web
 
 C'est le fond du site [Le Portulan](https://leportulan.fr).
 
+**[Voir la carte en ligne](https://lenavarque.github.io/carte-portulan/)** : à déplacer et zoomer, du monde entier
+jusqu'aux îles de l'Égée.
+
 ![La Méditerranée vue par carte-portulan](docs/apercu.jpg)
 
 *[English summary below.](#in-english)*
@@ -145,6 +148,15 @@ de rhumbs : longitude, latitude, rayon), `portee` (longueur des lignes, en rayon
 latitude, taille), `champ_nom` (champ du nom des villes : `NAME_FR`, `NAME_EN`, `NAME_ES`…), `rang_max_ports_detail`
 et `rang_max_ports_monde` (quelles villes nommer), `lat_min` et `lat_max`. La liste complète, avec les valeurs par
 défaut, est dans [config.py](src/carte_portulan/config.py).
+
+## Démonstration en ligne
+
+La page [demo/index.html](demo/index.html) est publiée sur GitHub Pages à chaque envoi sur `main` : le workflow
+[pages.yml](.github/workflows/pages.yml) télécharge les cinq couches Natural Earth, génère la carte et publie la
+page à côté. Pour l'activer sur un dépôt : Settings → Pages → Source : GitHub Actions.
+
+En local : `carte-portulan --sortie sortie`, copier `demo/index.html` dans `sortie/`, puis
+`python -m http.server --directory sortie` et ouvrir <http://localhost:8000/>.
 
 ## Tests
 

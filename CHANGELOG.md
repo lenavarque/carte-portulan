@@ -5,6 +5,11 @@ et les numéros de version suivent le [versionnage sémantique](https://semver.o
 
 ## [Non publié]
 
+### Ajouté
+
+- Démonstration en ligne sur GitHub Pages : la carte en plein écran, à déplacer et zoomer, avec des vues prêtes,
+  des couches à masquer et la vue gardée dans l'adresse. Générée et publiée par un workflow à chaque envoi.
+
 ## [0.1.0] - 2026-09-28
 
 ### Ajouté

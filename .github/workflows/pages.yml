@@ -1,0 +1,55 @@
+name: Démonstration
+
+# Génère la carte à partir de Natural Earth et publie la page de démonstration sur GitHub Pages
+# (réglage du dépôt : Settings → Pages → Source : GitHub Actions).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  construire:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Installation
+        run: python -m pip install .
+      - name: Données Natural Earth
+        run: |
+          mkdir -p donnees
+          for couche in 50m/physical/ne_50m_land 10m/physical/ne_10m_coastline 50m/physical/ne_50m_coastline \
+                        50m/physical/ne_50m_lakes 10m/cultural/ne_10m_populated_places; do
+            curl -fsSL --retry 3 -o "donnees/$(basename "$couche").zip" "https://naciscdn.org/naturalearth/$couche.zip"
+          done
+      - name: Carte
+        run: carte-portulan --natural-earth donnees --sortie _site
+      - name: Page de démonstration
+        run: |
+          cp demo/index.html _site/index.html
+          rm _site/apercu.html
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  publier:
+    needs: construire
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploiement.outputs.page_url }}
+    steps:
+      - id: deploiement
+        uses: actions/deploy-pages@v4

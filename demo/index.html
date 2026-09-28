@@ -1,0 +1,185 @@
+<!doctype html>
+<!--
+  Démonstration publiée sur GitHub Pages : la carte en plein écran, à déplacer et zoomer.
+  Le workflow .github/workflows/pages.yml génère portulan.svg et le place à côté de cette page.
+  En local : carte-portulan --sortie sortie, copier cette page dans sortie/, puis python -m http.server.
+-->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Carte portulan</title>
+<meta name="description" content="Une carte du monde à la manière des portulans, générée en SVG d'après Natural Earth.">
+<style>
+  :root {
+    --nuit: #111317; --encre: #16191e; --texte: #e4e3de; --texte-2: #9ba1a8; --accent: #d8573c;
+    --terre-fond: rgba(228, 227, 222, 0.055);
+    --terre-trait: rgba(228, 227, 222, 0.36);
+    --lac-fond: #111317;
+    --nom-1: rgba(216, 87, 60, 0.7);
+    --nom-2: rgba(228, 227, 222, 0.34);
+    --rhumb-vent: rgba(228, 227, 222, 0.09);
+    --rhumb-demi: rgba(111, 159, 122, 0.17);
+    --rhumb-quart: rgba(216, 87, 60, 0.15);
+    --rose-1: rgba(216, 87, 60, 0.4);
+    --rose-2: rgba(217, 170, 69, 0.3);
+    --rose-trait: rgba(228, 227, 222, 0.15);
+    --grandes-roses: 0.2;
+    color-scheme: dark;
+  }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--nuit); color: var(--texte);
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .vue { position: fixed; inset: 0; cursor: grab; touch-action: none; }
+  .vue.glisse { cursor: grabbing; }
+  /* la carte est dessinée sur trois fois l'écran, pour qu'un déplacement ne découvre pas de vide */
+  .couche { position: absolute; left: -100vw; top: -100vh; width: 300vw; height: 300vh;
+    transform-origin: 0 0; will-change: transform; }
+  .couche svg { display: block; width: 100%; height: 100%; }
+  .panneau { position: fixed; left: 16px; top: 16px; max-width: 290px; padding: 14px 16px;
+    background: rgba(22, 25, 30, 0.94); border: 1px solid rgba(228, 227, 222, 0.14); border-radius: 2px; }
+  h1 { margin: 0 0 4px; font: 600 20px/1.2 Georgia, serif; font-variant: small-caps; letter-spacing: .05em; }
+  h1 b { color: var(--accent); font-weight: 600; }
+  .panneau p { margin: 0 0 10px; color: var(--texte-2); }
+  .vues { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
+  button { font: inherit; color: var(--texte); background: #272c34; border: 0; border-radius: 2px;
+    padding: 4px 9px; cursor: pointer; }
+  button:hover { background: #333a44; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  label { display: inline-flex; align-items: center; gap: 5px; margin-right: 12px; color: var(--texte-2); cursor: pointer; }
+  .liens { margin-top: 10px; font-size: 13px; color: var(--texte-2); }
+  .liens a { color: var(--texte); }
+  .position { position: fixed; right: 12px; bottom: 10px; color: var(--texte-2); font-size: 12px;
+    font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<div class="vue" id="vue" aria-label="Carte à déplacer et zoomer">
+  <div class="couche" id="couche">
+    <svg id="carte" preserveAspectRatio="xMidYMid slice">
+      <use id="u-rhumbs" href="portulan.svg#rhumbs"/><use id="u-noeuds" href="portulan.svg#roses-noeuds"/>
+      <use href="portulan.svg#terres"/><use id="u-noms" href="portulan.svg#noms"/><use id="u-roses" href="portulan.svg#roses"/>
+    </svg>
+  </div>
+</div>
+
+<section class="panneau">
+  <h1>Carte <b>p</b>ortulan</h1>
+  <p>Le monde à la manière des portulans. Glissez pour déplacer, molette ou pincement pour zoomer.</p>
+  <div class="vues" id="vues"></div>
+  <label><input type="checkbox" data-couche="u-rhumbs,u-noeuds" checked> Rhumbs</label>
+  <label><input type="checkbox" data-couche="u-noms" checked> Noms</label>
+  <label><input type="checkbox" data-couche="u-roses" checked> Roses</label>
+  <div class="liens">
+    <a href="https://github.com/lenavarque/carte-portulan">Code source</a> ·
+    <a href="https://leportulan.fr">Le Portulan</a> ·
+    d'après <a href="https://www.naturalearthdata.com/">Natural Earth</a>
+  </div>
+</section>
+<div class="position" id="position" aria-live="polite"></div>
+
+<script>
+  const K = 100;                                           // unités de la carte par degré
+  const mercator = (lat) => -Math.log(Math.tan(Math.PI / 4 + (Math.max(-72, Math.min(80, lat)) * Math.PI) / 360)) * 180 / Math.PI * K;
+  const latitude = (y) => (2 * Math.atan(Math.exp((-y / K) * Math.PI / 180)) - Math.PI / 2) * 180 / Math.PI;
+  const VUES = { "Méditerranée": [16, 38, 44], "Égée": [24.3, 38.3, 13], "Europe": [10, 50, 42],
+                 "Asie": [100, 38, 90], "Amériques": [-80, 12, 110], "Monde": [10, 20, 360] };
+  const LARGEUR_MIN = 3 * K, LARGEUR_MAX = 400 * K;
+
+  const vue = document.getElementById("vue"), couche = document.getElementById("couche");
+  const carte = document.getElementById("carte"), position = document.getElementById("position");
+  let v;                                                   // vue validée : centre (cx, cy) et largeur visible w
+  let t = { x: 0, y: 0, s: 1 };                            // déplacement en cours, avant d'être validé
+  let minuterie;
+
+  function poser(nv) {
+    v = { ...nv, w: Math.min(LARGEUR_MAX, Math.max(LARGEUR_MIN, nv.w)) };
+    const W = innerWidth, H = innerHeight, h = (v.w * H) / W;
+    carte.setAttribute("viewBox", `${v.cx - 1.5 * v.w} ${v.cy - 1.5 * h} ${3 * v.w} ${3 * h}`);
+    const degres = v.w / K;
+    const s = carte.style;
+    s.setProperty("--trait", `${v.w / W}px`);                         // un pixel à l'écran
+    s.setProperty("--taille-noms", `${(11 * v.w) / W}px`);
+    s.setProperty("--noms-1", degres > 150 ? 0 : 1);
+    s.setProperty("--noms-2", degres > 40 ? 0 : 1);
+    s.setProperty("--rhumbs-cercles", degres > 160 ? 0 : 1);
+    t = { x: 0, y: 0, s: 1 };
+    couche.style.transform = "";
+    const lon = v.cx / K, lat = latitude(v.cy);
+    position.textContent = `${lat.toFixed(1)}° ${lat >= 0 ? "N" : "S"}, ${Math.abs(lon).toFixed(1)}° ${lon >= 0 ? "E" : "O"} · ${degres.toFixed(0)}° de large`;
+    history.replaceState(null, "", `#${lon.toFixed(2)},${lat.toFixed(2)},${degres.toFixed(1)}`);
+  }
+
+  const aller = ([lon, lat, largeur]) => poser({ cx: lon * K, cy: mercator(lat), w: largeur * K });
+
+  // Pendant un geste, la carte déjà dessinée est seulement déplacée ; elle est redessinée à l'arrêt
+  function geste() {
+    couche.style.transform = `translate(${t.x}px, ${t.y}px) scale(${t.s})`;
+    clearTimeout(minuterie);
+    minuterie = setTimeout(valider, 180);
+  }
+  function valider() {
+    const W = innerWidth, H = innerHeight, u = v.w / W;             // unités de la carte par pixel de la couche
+    const q = [(W / 2 + W - t.x) / t.s, (H / 2 + H - t.y) / t.s];   // centre de l'écran, dans la couche
+    poser({ cx: v.cx - 1.5 * v.w + q[0] * u, cy: v.cy - (1.5 * v.w * H) / W + q[1] * u, w: v.w / t.s });
+  }
+  function zoomer(f, px, py) {
+    const s = Math.min(v.w / LARGEUR_MIN, Math.max(v.w / LARGEUR_MAX, t.s * f));   // largeur visible = v.w / s
+    const W = innerWidth, H = innerHeight;
+    const q = [(px + W - t.x) / t.s, (py + H - t.y) / t.s];
+    t = { x: px + W - s * q[0], y: py + H - s * q[1], s };
+    geste();
+  }
+
+  vue.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const d = e.deltaY * (e.deltaMode === 1 ? 16 : 1);
+    zoomer(Math.exp(-d * (Math.abs(d) < 40 ? 0.012 : 0.0025)), e.clientX, e.clientY);
+  }, { passive: false });
+
+  const pointeurs = new Map();
+  vue.addEventListener("pointerdown", (e) => {
+    vue.setPointerCapture(e.pointerId);
+    pointeurs.set(e.pointerId, [e.clientX, e.clientY]);
+    vue.classList.add("glisse");
+  });
+  vue.addEventListener("pointermove", (e) => {
+    if (!pointeurs.has(e.pointerId)) return;
+    const avant = [...pointeurs.values()];
+    pointeurs.set(e.pointerId, [e.clientX, e.clientY]);
+    const apres = [...pointeurs.values()];
+    if (apres.length === 1) {
+      t.x += apres[0][0] - avant[0][0];
+      t.y += apres[0][1] - avant[0][1];
+      geste();
+    } else if (apres.length === 2 && avant.length === 2) {
+      const dist = (p) => Math.hypot(p[0][0] - p[1][0], p[0][1] - p[1][1]);
+      const milieu = (p) => [(p[0][0] + p[1][0]) / 2, (p[0][1] + p[1][1]) / 2];
+      const [ma, mb] = [milieu(avant), milieu(apres)];
+      t.x += mb[0] - ma[0];
+      t.y += mb[1] - ma[1];
+      zoomer(dist(apres) / dist(avant), ...mb);
+    }
+  });
+  const lacher = (e) => { pointeurs.delete(e.pointerId); if (!pointeurs.size) vue.classList.remove("glisse"); };
+  vue.addEventListener("pointerup", lacher);
+  vue.addEventListener("pointercancel", lacher);
+  vue.addEventListener("dblclick", (e) => zoomer(e.shiftKey ? 0.5 : 2, e.clientX, e.clientY));
+
+  const boutons = document.getElementById("vues");
+  for (const [nom, valeurs] of Object.entries(VUES)) {
+    const b = Object.assign(document.createElement("button"), { type: "button", textContent: nom });
+    b.addEventListener("click", () => aller(valeurs));
+    boutons.append(b);
+  }
+  for (const c of document.querySelectorAll("[data-couche]")) {
+    c.addEventListener("change", () => c.dataset.couche.split(",").forEach((id) => {
+      document.getElementById(id).style.display = c.checked ? "" : "none";
+    }));
+  }
+  addEventListener("resize", () => poser(v));
+
+  const depuisAdresse = location.hash.slice(1).split(",").map(Number);
+  aller(depuisAdresse.length === 3 && depuisAdresse.every(Number.isFinite) ? depuisAdresse : VUES["Méditerranée"]);
+</script>
+</body>
+</html>
