@@ -15,7 +15,7 @@ from html import escape
 from .config import Config
 from .etiquettes import BAS, HAUT, Etiquette, Rectangle, largeur, paliers
 from .geometrie import (Grille, chemin, dans_boite, etendue, etoile, par_cases, sans_bords, simplifier,
-                        simplifier_par_zones)
+                        simplifier_par_zones, traverser)
 from .natural_earth import Source
 from .projection import UNITES
 from .projection import projeter as _projeter
@@ -175,18 +175,22 @@ class _Dessin:
         passent par d'autres roses : une corde est commune à deux roses, un diamètre aux deux roses opposées et à la
         rose centrale. Chaque droite n'est tracée qu'une fois (sinon, avec un tracé irrégulier, elle se dédouble) :
         les 16 droites de la rose centrale (32 vents, dont 8 diamètres), puis pour les roses du cercle, les cordes
-        entre roses de même parité (16 directions) et les tangentes. Comme à la main : angle un peu inégal, longueur
-        et intensité variables, quelques droites absentes."""
+        entre roses de même parité (16 directions) et les tangentes. Comme sur les portulans, ce sont des droites qui
+        traversent toute la carte (réglage portee : None) ; comme à la main : angle un peu inégal, intensité
+        variable, quelques droites absentes. Là où deux cercles se touchent (planisphère de Cantino), une rose."""
         c = self.c
         hasard = random.Random(c.graine)
         types: dict[tuple[str, str, int], list[str]] = defaultdict(list)
         tracees: dict[int, list[tuple[float, float, float]]] = defaultdict(list)   # par direction : décalage, étendue
+        (ouest, nord), (est, sud) = self.projeter(-180, c.lat_max), self.projeter(180, c.lat_min)
         noeuds = []
+        sommets = []                                         # (x, y, réseau) : les 16 points de chaque cercle
         for s, (lon, lat, r) in enumerate(c.systemes):
             cx, cy = self.projeter(lon, lat)
             rayon = self.u(r)
             roses = [(cx + rayon * math.sin(math.radians(i * 22.5)), cy - rayon * math.cos(math.radians(i * 22.5)))
                      for i in range(16)]
+            sommets += [(x, y, s) for x, y in roses]
             noeuds.append({"x": round(cx), "y": round(cy), "s": s, "centre": True})
             noeuds += [{"x": round(x), "y": round(y), "s": s, "centre": False} for x, y in roses[1::2]]
             # (point de passage, cap en degrés, origine) ; cap 0 = nord, sens des aiguilles d'une montre
@@ -208,12 +212,20 @@ class _Dessin:
                 a = math.radians(k * 11.25 + hasard.uniform(-c.irregularite, c.irregularite))
                 ux, uy = math.sin(a), -math.cos(a)
                 # longueur de part et d'autre, comptée depuis le point de la droite le plus proche du centre du réseau
+                # (quand les lignes ne vont pas d'un bord à l'autre)
                 t = (cx - px) * ux + (cy - py) * uy
-                l1 = rayon * c.portee * (1 + hasard.uniform(-c.variation_longueur, c.variation_longueur))
-                l2 = rayon * c.portee * (1 + hasard.uniform(-c.variation_longueur, c.variation_longueur))
+                portee = c.portee or 0
+                l1 = rayon * portee * (1 + hasard.uniform(-c.variation_longueur, c.variation_longueur))
+                l2 = rayon * portee * (1 + hasard.uniform(-c.variation_longueur, c.variation_longueur))
                 genre = "vents" if k % 4 == 0 else ("demi" if k % 2 == 0 else "quarts")
                 intensite = hasard.choices((0, 1, 2), weights=(3, 5, 2))[0]
-                (x1, y1), (x2, y2) = (px + ux * (t - l1), py + uy * (t - l1)), (px + ux * (t + l2), py + uy * (t + l2))
+                if c.portee is None:                         # une droite, jusqu'au bord de la carte
+                    s1, s2 = traverser((px, py), (ux, uy), (ouest, nord, est, sud))
+                    if s2 <= s1:
+                        continue
+                    (x1, y1), (x2, y2) = (px + ux * s1, py + uy * s1), (px + ux * s2, py + uy * s2)
+                else:
+                    (x1, y1), (x2, y2) = (px + ux * (t - l1), py + uy * (t - l1)), (px + ux * (t + l2), py + uy * (t + l2))
                 # une droite presque confondue avec une autre déjà tracée (d'un réseau voisin) doublerait le trait
                 a0 = math.radians(k * 11.25)
                 decalage = px * math.cos(a0) + py * math.sin(a0)
@@ -222,6 +234,12 @@ class _Dessin:
                     continue
                 tracees[k].append((decalage, debut, fin))
                 types[(genre, origine, intensite)].append(f"M{x1:.0f} {y1:.0f}L{x2:.0f} {y2:.0f}")
+        # point commun à deux cercles (sur le planisphère de Cantino, une grande rose là où ils se touchent) : une rose
+        # comme celle d'un centre
+        for i, (x, y, s) in enumerate(sommets):
+            if any(t != s and math.dist((x, y), (u, v)) < 1 for u, v, t in sommets[:i]):
+                noeuds = [n for n in noeuds if math.dist((n["x"], n["y"]), (x, y)) >= 1]
+                noeuds.append({"x": round(x), "y": round(y), "s": s, "centre": True})
         return {k: "".join(v) for k, v in types.items()}, noeuds
 
 

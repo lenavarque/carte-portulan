@@ -40,13 +40,14 @@ class Config:
     chateaux: bool = True
     taille_chateau: float = 1.6                              # hauteur du château, en tailles de nom (em)
 
-    # Réseaux de rhumbs : (longitude, latitude, rayon du cercle des 16 roses), en degrés. Comme sur les portulans,
-    # peu de réseaux mais grands : la rose centrale trace les 32 vents, les 16 roses du cercle 16 directions.
+    # Réseaux de rhumbs : (longitude, latitude, rayon du cercle des 16 roses), en degrés. La rose centrale trace les
+    # 32 vents, les 16 roses du cercle 16 directions. Par défaut, deux âges des portulans : le réseau médiéval de la
+    # Méditerranée, et les deux grands cercles du planisphère de Cantino (1502), centrés sur les îles du Cap-Vert et
+    # sur l'Inde, qui se touchent en Afrique (une rose y marque leur point commun).
     systemes: list[tuple[float, float, float]] = field(default_factory=lambda: [
-        (17, 38, 20), (-32, 44, 22), (72, 40, 24), (125, 28, 22), (70, -18, 24), (-80, 14, 26),
-        (-22, -26, 24), (-138, -30, 26), (-150, 28, 24), (160, -22, 24)])
-    portee: float = 3.0                                      # longueur des lignes de part et d'autre, en rayons
-    variation_longueur: float = 0.3                          # chaque ligne s'arrête à ± 30 % de la portée
+        (17, 38, 20), (-24, 16, 51), (78, 16, 51)])
+    portee: float | None = None                              # None : des droites, d'un bord de la carte à l'autre…
+    variation_longueur: float = 0.3                          # … sinon leur longueur de part et d'autre, en rayons, ± 30 %
     irregularite: float = 0.1                                # écart d'angle d'une ligne tracée « à la main », en degrés
     lignes_manquantes: float = 0.2                           # part des lignes des roses du cercle non tracées
     ecart_rhumbs: float = 0.3                                # droites parallèles plus proches : tracées une fois

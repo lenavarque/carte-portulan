@@ -32,6 +32,10 @@ et les numéros de version suivent le [versionnage sémantique](https://semver.o
   n'est tracée qu'une fois : une corde est commune à deux roses, un diamètre aux deux roses opposées et à la rose
   centrale, et deux droites presque confondues de réseaux voisins n'en font qu'une (réglage `ecart_rhumbs`).
 - Plus de noms de ports (`rang_max_ports_detail` passe à 9), les petits un peu plus petits.
+- Les lignes de rhumb sont des droites qui traversent toute la carte, comme sur les portulans (réglage `portee` :
+  `None` par défaut ; un nombre les arrête à tant de rayons). Trois réseaux par défaut au lieu de dix : celui de la
+  Méditerranée et les deux grands cercles du planisphère de Cantino (1502), centrés sur les îles du Cap-Vert et sur
+  l'Inde, qui se touchent en Afrique ; une rose marque tout point commun à deux cercles.
 - Les côtes sont le contour des terres elles-mêmes (couche `ne_10m_land`, détaillée dans la zone de détail, simplifiée
   ailleurs) : le trait et le remplissage se superposent exactement. Les couches `ne_50m_land`, `ne_10m_coastline` et
   `ne_50m_coastline` ne servent plus ; les réglages `couche_cotes_detail`, `couche_cotes_monde` et `taille_min_cote`

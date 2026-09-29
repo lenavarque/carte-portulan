@@ -128,9 +128,24 @@ class TestGeneration(unittest.TestCase):
 
     def test_reseaux(self):
         systemes = len(Config().systemes)
-        self.assertEqual(len(self.carte.noeuds), systemes * 9)  # rose centrale + une sur deux du cercle
-        self.assertEqual(sum(n["centre"] for n in self.carte.noeuds), systemes)
+        # rose centrale + une sur deux du cercle, et une rose là où les deux cercles de Cantino se touchent
+        self.assertEqual(len(self.carte.noeuds), systemes * 9 + 1)
+        self.assertEqual(sum(n["centre"] for n in self.carte.noeuds), systemes + 1)
         self.assertEqual(self.carte.index()["k"], 100)
+
+    def test_droites_d_un_bord_a_l_autre(self):
+        import re
+        ouest, nord, est, sud = self.carte.index()["bornes"]
+        bord = lambda x, y: min(abs(x - ouest), abs(x - est), abs(y - nord), abs(y - sud)) <= 1
+        segments = [tuple(map(float, m)) for p in self.groupe("rhumbs").iter(f"{SVG}path")
+                    for m in re.findall(r"M(-?\d+) (-?\d+)L(-?\d+) (-?\d+)", p.get("d"))]
+        self.assertTrue(segments)
+        self.assertTrue(all(bord(x1, y1) and bord(x2, y2) for x1, y1, x2, y2 in segments))
+        # avec une portée, des segments, qui s'arrêtent avant les bords
+        courts = ET.fromstring(generer(Source(self.dossier), Config(portee=1.0)).svg).find(".//*[@id='rhumbs']")
+        coupes = [tuple(map(float, m)) for p in courts.iter(f"{SVG}path")
+                  for m in re.findall(r"M(-?\d+) (-?\d+)L(-?\d+) (-?\d+)", p.get("d"))]
+        self.assertFalse(all(bord(x1, y1) and bord(x2, y2) for x1, y1, x2, y2 in coupes))
 
     def test_rose(self):
         self.assertTrue(rose_ornee().startswith('<g id="rose-ornee">'))

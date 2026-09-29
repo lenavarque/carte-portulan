@@ -68,6 +68,20 @@ def sans_bords(anneau: Sequence[Point], sur_bord: Callable[[Point], bool]) -> li
     return lignes
 
 
+def traverser(p: Point, u: Point, boite: Sequence[float]) -> tuple[float, float]:
+    """(s1, s2) tels que la droite p + s·u traverse la boîte (x0, y0, x1, y1) de p + s1·u à p + s2·u
+    (algorithme de Liang-Barsky) ; s2 <= s1 si elle la manque."""
+    s1, s2 = -math.inf, math.inf
+    for q, v, bas, haut in ((p[0], u[0], boite[0], boite[2]), (p[1], u[1], boite[1], boite[3])):
+        if abs(v) < 1e-12:
+            if not bas <= q <= haut:
+                return 0.0, 0.0
+            continue
+        a, b = (bas - q) / v, (haut - q) / v
+        s1, s2 = max(s1, min(a, b)), min(s2, max(a, b))
+    return s1, s2
+
+
 def dans_boite(lon: float, lat: float, boite: Sequence[float]) -> bool:
     """La boîte est (longitude ouest, latitude sud, longitude est, latitude nord)."""
     return boite[0] <= lon <= boite[2] and boite[1] <= lat <= boite[3]

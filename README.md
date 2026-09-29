@@ -27,10 +27,14 @@ jusqu'aux îles de l'Égée.
 - **Les villes** : un petit château (muraille, tour, fanion) devant le nom des grands ports de la zone détaillée,
   comme les vignettes des portulans. Il suit la taille des noms.
 - **Les réseaux de rhumbs** : autour d'une rose centrale, qui trace les 32 vents, 16 roses sur un cercle, qui en
-  tracent 16, en trois encres (vents principaux, demi-vents, quarts de vent). Comme sur les portulans, une droite
-  passe souvent par plusieurs roses : elle n'est tracée qu'une fois. Les lignes sont tracées comme à la main : angle
-  un peu inégal, longueur et intensité variables, quelques-unes absentes. Le hasard est réglé par une graine : la
-  même carte à chaque génération.
+  tracent 16, en trois encres (vents principaux, demi-vents, quarts de vent). Comme sur les portulans, ce sont des
+  droites qui traversent toute la carte, et une droite passe souvent par plusieurs roses : elle n'est tracée qu'une
+  fois. Par défaut, trois réseaux, deux âges des portulans : celui de la Méditerranée, comme sur les cartes
+  médiévales, et les deux grands cercles du
+  [planisphère de Cantino](https://fr.wikipedia.org/wiki/Planisph%C3%A8re_de_Cantino) (1502), centrés sur les îles
+  du Cap-Vert et sur l'Inde, qui se touchent en Afrique, où une rose marque leur point commun. Les lignes sont
+  tracées comme à la main : angle un peu inégal, intensité variable, quelques-unes absentes. Le hasard est réglé par
+  une graine : la même carte à chaque génération.
 - **Les roses des vents** : des petites aux nœuds du réseau, une grande rose au centre du réseau de la Méditerranée,
   et quelques autres en haute mer. Elles sont gravées à l'encre : branches hachurées, anneau gradué, noms des vents
   méditerranéens en toutes lettres (Tramontana, Greco, Levante…), fleur de lys au nord et croix au levant.
@@ -187,7 +191,8 @@ Un fichier JSON passé à `--config` remplace les réglages par défaut (positio
 ```
 
 Les principaux réglages : `boite_detail` (zone aux côtes détaillées : ouest, sud, est, nord), `systemes` (réseaux
-de rhumbs : longitude, latitude, rayon), `portee` (longueur des lignes, en rayons), `variation_longueur`,
+de rhumbs : longitude, latitude, rayon), `portee` (`null` : des droites d'un bord à l'autre ; sinon la longueur
+des lignes, en rayons), `variation_longueur`,
 `irregularite` et `lignes_manquantes` (le tracé « à la main »), `case_terres` (côté des cases des terres, en degrés), `ecart_rhumbs` (deux droites parallèles plus
 proches ne sont tracées qu'une fois), `graine` (le hasard), `paliers_noms` (seuils des paliers des noms), `chateaux`
 et `taille_chateau` (en tailles de nom), `rose_centrale` (longitude,

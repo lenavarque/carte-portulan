@@ -1,7 +1,7 @@
 import unittest
 
 from carte_portulan.geometrie import (Grille, chemin, couper_rectangle, dans_boite, etendue, etoile, morceaux,
-                                      par_cases, sans_bords, simplifier, simplifier_par_zones)
+                                      par_cases, sans_bords, simplifier, simplifier_par_zones, traverser)
 
 
 class TestSimplifier(unittest.TestCase):
@@ -53,6 +53,14 @@ class TestCotes(unittest.TestCase):
         ligne = [(0, 0), (1, 0.1), (2, 0), (3, 0.1), (4, 0), (5, 0.1), (6, 0)]
         zones = [True, True, True, False, False, False, False]
         self.assertEqual(simplifier_par_zones(ligne, zones, 0.01, 1), [(0, 0), (1, 0.1), (2, 0), (3, 0.1), (6, 0)])
+
+    def test_traverser(self):
+        # une diagonale à travers le carré [0, 10] × [0, 10] depuis son centre
+        s1, s2 = traverser((5, 5), (1, 1), (0, 0, 10, 10))
+        self.assertEqual((s1, s2), (-5, 5))
+        self.assertEqual(traverser((5, 5), (1, 0), (0, 0, 10, 10)), (-5, 5))
+        s1, s2 = traverser((5, 20), (1, 0), (0, 0, 10, 10))              # passe à côté
+        self.assertLessEqual(s2, s1)
 
     def test_sans_bords(self):
         # un carré coupé par le bord y = 10 : le côté posé sur le bord n'est pas une côte
