@@ -13,10 +13,13 @@ class Config:
     boite_detail: tuple[float, float, float, float] = (-16.0, 25.0, 50.0, 62.0)
     """Zone aux côtes détaillées (ouest, sud, est, nord) : Méditerranée et Europe par défaut."""
     tolerance_detail: float = 0.009                          # simplification des côtes, en degrés
-    tolerance_monde: float = 0.026
-    taille_min_terre: float = 0.12                           # îles plus petites ignorées (largeur + hauteur, degrés)
-    taille_min_cote: float = 0.10
+    tolerance_monde: float = 0.05
+    taille_min_terre: float = 0.2                            # îles plus petites ignorées (largeur + hauteur, degrés)…
+    taille_min_terre_detail: float = 0.04                    # … et dans la zone détaillée
     rang_max_lacs: float = 1                                 # « scalerank » des lacs gardés (0 = les plus grands)
+    case_terres: float = 10.0
+    """Terres, côtes et lacs sont découpés en cases de ce côté, en degrés : un tracé par case, pour que le navigateur
+    ne redessine que ce qui est à l'écran (0 : un seul tracé pour toute la carte)."""
 
     # Noms des ports
     champ_nom: str = "NAME_FR"                               # champ de Natural Earth pour le nom (sinon NAME)
@@ -58,9 +61,7 @@ class Config:
         (-38, 31, 4.2), (74, -14, 4.8), (-160, 12, 5.0), (-44, -36, 4.2), (170, -40, 4.6), (-12, 5, 3.6)])
 
     # Couches Natural Earth utilisées
-    couche_terres: str = "ne_50m_land"
-    couche_cotes_detail: str = "ne_10m_coastline"
-    couche_cotes_monde: str = "ne_50m_coastline"
+    couche_terres: str = "ne_10m_land"                       # remplissage et côtes : les mêmes polygones
     couche_lacs: str = "ne_50m_lakes"
     couche_villes: str = "ne_10m_populated_places"
 

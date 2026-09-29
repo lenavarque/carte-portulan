@@ -49,9 +49,7 @@ def monde_factice(dossier: Path) -> None:
     """Une île carrée en Méditerranée (5° E – 7° E, 40° N – 42° N), un lac, et deux villes au bord de l'eau."""
     ile = [[(5.0, 40.0), (5.0, 42.0), (7.0, 42.0), (7.0, 40.0), (5.0, 40.0)]]
     lac = [[(5.8, 40.8), (5.8, 41.2), (6.2, 41.2), (6.2, 40.8), (5.8, 40.8)]]
-    ecrire_couche(dossier, "ne_50m_land", 5, [ile], [("featurecla", 20)], [{"featurecla": "Land"}])
-    ecrire_couche(dossier, "ne_10m_coastline", 3, [ile], [("featurecla", 20)], [{"featurecla": "Coastline"}])
-    ecrire_couche(dossier, "ne_50m_coastline", 3, [], [("featurecla", 20)], [])
+    ecrire_couche(dossier, "ne_10m_land", 5, [ile], [("featurecla", 20)], [{"featurecla": "Land"}])
     ecrire_couche(dossier, "ne_50m_lakes", 5, [lac], [("scalerank", 4)], [{"scalerank": "0"}])
     champs = [("SCALERANK", 4), ("NAME", 30), ("NAME_FR", 30), ("ADM0CAP", 4), ("LATITUDE", 12), ("LONGITUDE", 12),
               ("POP_MAX", 12)]

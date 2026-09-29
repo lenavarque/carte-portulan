@@ -3,7 +3,8 @@
 Le SVG produit n'a pas de viewBox : il sert de réserve de groupes, à afficher avec <use> (voir le README).
 Groupes : « terres », « noms », « villes », « rhumbs », « roses-noeuds », « roses », « rose-centrale ». Les couleurs et
 les épaisseurs viennent de variables CSS, héritées à travers <use> : la page qui affiche la carte les choisit. Noms et
-châteaux sont rangés par paliers de zoom (voir etiquettes.py).
+châteaux sont rangés par paliers de zoom (voir etiquettes.py) ; terres, côtes et lacs, par cases (réglage
+case_terres), pour que le navigateur ne redessine que ce qui est à l'écran.
 """
 import math
 import random
@@ -13,7 +14,8 @@ from html import escape
 
 from .config import Config
 from .etiquettes import BAS, HAUT, Etiquette, Rectangle, largeur, paliers
-from .geometrie import Grille, chemin, dans_boite, etendue, etoile, morceaux, simplifier
+from .geometrie import (Grille, chemin, dans_boite, etendue, etoile, par_cases, sans_bords, simplifier,
+                        simplifier_par_zones)
 from .natural_earth import Source
 from .projection import UNITES
 from .projection import projeter as _projeter
@@ -30,10 +32,11 @@ class Carte:
     nombre_noms: tuple[int, int]    # (grands ports, autres ports)
     nombre_villes: int = 0          # châteaux dessinés
     paliers: tuple[float, ...] = () # seuils des paliers des noms (--noms-p0, --noms-p1…)
+    bornes: tuple[int, ...] = ()    # étendue de la carte : x ouest, y nord, x est, y sud (unités de la carte)
 
     def index(self) -> dict:
         """Données annexes, à écrire en JSON à côté du SVG."""
-        return {"k": UNITES, "paliers": list(self.paliers), "noeuds": self.noeuds}
+        return {"k": UNITES, "bornes": list(self.bornes), "paliers": list(self.paliers), "noeuds": self.noeuds}
 
 
 class _Dessin:
@@ -49,40 +52,40 @@ class _Dessin:
 
     # ─── Terres, côtes, lacs ───
 
-    def terres(self) -> str:
+    def terres(self) -> list:
+        """Les polygones des terres, projetés : détaillés dans la boîte de détail, moyens ailleurs. Ils donnent à la
+        fois le remplissage et les côtes (cotes()), qui se superposent donc exactement."""
+        c = self.c
         anneaux = []
-        for geo, _ in self.source.lire(self.c.couche_terres, set()):
+        for geo, _ in self.source.lire(c.couche_terres, set()):
             for anneau in geo or []:
-                pts = simplifier([self.projeter(*p) for p in anneau], self.u(self.c.tolerance_monde))
-                if len(pts) >= 4 and etendue(pts) > self.u(self.c.taille_min_terre):
+                zones = [dans_boite(lon, lat, c.boite_detail) for lon, lat in anneau]
+                pts = simplifier_par_zones([self.projeter(*p) for p in anneau], zones,
+                                           self.u(c.tolerance_detail), self.u(c.tolerance_monde))
+                minimum = c.taille_min_terre_detail if any(zones) else c.taille_min_terre
+                if len(pts) >= 4 and etendue(pts) > self.u(minimum):
                     anneaux.append(pts)
-        return chemin(anneaux, fermer=True)
+        return anneaux
 
-    def cotes(self) -> tuple[str, list]:
-        """Côtes détaillées dans la boîte de détail, moyennes ailleurs. Renvoie (chemin, lignes projetées)."""
-        boite = self.c.boite_detail
-        lignes = []
-        for geo, _ in self.source.lire(self.c.couche_cotes_detail, set()):
-            for ligne in geo or []:
-                for m in morceaux(ligne, lambda lon, lat: dans_boite(lon, lat, boite)):
-                    pts = simplifier([self.projeter(*p) for p in m], self.u(self.c.tolerance_detail))
-                    if len(pts) > 2 or math.dist(pts[0], pts[-1]) > self.u(0.04):
-                        lignes.append(pts)
-        for geo, _ in self.source.lire(self.c.couche_cotes_monde, set()):
-            for ligne in geo or []:
-                for m in morceaux(ligne, lambda lon, lat: not dans_boite(lon, lat, boite)):
-                    pts = simplifier([self.projeter(*p) for p in m], self.u(self.c.tolerance_monde))
-                    if etendue(pts) > self.u(self.c.taille_min_cote):
-                        lignes.append(pts)
-        return chemin(lignes), lignes
+    def cotes(self, anneaux: list) -> list:
+        """Les côtes : le contour des terres, sans les côtés posés sur le bord de la carte."""
+        (ouest, nord), (est, sud) = self.projeter(-180, self.c.lat_max), self.projeter(180, self.c.lat_min)
+        sur_bord = lambda p: p[0] <= ouest + 0.5 or p[0] >= est - 0.5 or p[1] <= nord + 0.5 or p[1] >= sud - 0.5
+        return [ligne for anneau in anneaux for ligne in sans_bords(anneau, sur_bord)]
 
-    def lacs(self) -> str:
+    def lacs(self) -> list:
         anneaux = []
         for geo, att in self.source.lire(self.c.couche_lacs, {"scalerank"}):
             if geo and float(att.get("scalerank") or 9) <= self.c.rang_max_lacs:
                 for anneau in geo:
                     anneaux.append(simplifier([self.projeter(*p) for p in anneau], self.u(self.c.tolerance_monde)))
-        return chemin(anneaux, fermer=True)
+        return anneaux
+
+    def par_case(self, lignes: list, mode: str) -> str:
+        """Un <path> par case (voir geometrie.par_cases), ou un seul si case_terres vaut 0."""
+        cases = par_cases(lignes, self.u(self.c.case_terres), mode) if self.c.case_terres else {(0, 0): lignes}
+        chemins = (chemin(cases[k], fermer=mode != "couper") for k in sorted(cases))
+        return "".join(f'<path d="{d}"/>' for d in chemins if d)
 
     # ─── Noms des ports : perpendiculaires à la côte, écrits vers l'intérieur des terres ───
 
@@ -151,14 +154,18 @@ class _Dessin:
             texte = escape(nom, quote=False)
             decale = f' x="{-avant if inverse else avant:.2f}em"' if avant else ""
             fin_nom = ' text-anchor="end"' if inverse else ""
-            noms[rang_nom, k].append(f'<text transform="translate({x:.0f} {y:.0f}) rotate({rotation:.0f})"{decale}{fin_nom}>'
-                                     f'{texte}</text>')
+            # chaque nom porte son palier (--noms-pk), et les petits --petits-noms : posé sur un groupe, « display »
+            # cache les textes, mais Chrome les remet quand même en page
+            palier_k = f"var(--noms-p{k},inline)"
+            affichage = palier_k if rang_nom == 1 else f"var(--petits-noms,{palier_k})"
+            noms[rang_nom, k].append(f'<text transform="translate({x:.0f} {y:.0f}) rotate({rotation:.0f})"{decale}{fin_nom} '
+                                     f'style="display:{affichage}">{texte}</text>')
             if chateau:
                 # le dessin fait 22 × 35 unités avec la marge du trait (33 de haut sans elle)
                 hc, lc = h * 35 / 33, h * 22 / 33
                 chateaux[k].append(f'<use href="#chateau" transform="translate({x:.0f} {y:.0f})" '
                                    f'x="{vx * centre_chateau - lc / 2:.2f}em" y="{vy * centre_chateau - hc / 2:.2f}em" '
-                                   f'width="{lc:.2f}em" height="{hc:.2f}em"/>')
+                                   f'width="{lc:.2f}em" height="{hc:.2f}em" style="display:{palier_k}"/>')
         return noms, chateaux
 
     # ─── Réseaux de rhumbs : une rose centrale et 16 roses sur un cercle ───
@@ -244,11 +251,12 @@ def generer(source: Source, config: Config | None = None, journal=None) -> Carte
     config = config or Config()
     dire = journal or (lambda _: None)
     dessin = _Dessin(source, config)
-    dire("Terres…")
-    d_terres = dessin.terres()
-    dire("Côtes…")
-    d_cotes, lignes = dessin.cotes()
-    d_lacs = dessin.lacs()
+    dire("Terres et côtes…")
+    anneaux = dessin.terres()
+    terres = dessin.par_case(anneaux, "decouper")
+    lignes = dessin.cotes(anneaux)
+    cotes = dessin.par_case(lignes, "couper")
+    lacs = dessin.par_case(dessin.lacs(), "entier")
     dire("Noms des ports…")
     noms, chateaux = dessin.noms(lignes)
     dire("Rhumbs et roses…")
@@ -277,9 +285,8 @@ def generer(source: Source, config: Config | None = None, journal=None) -> Carte
             for g in encres for i, (o, e) in enumerate(intensites) if r.get((g, origine, i)))
 
     def par_palier(elements: dict, cle) -> str:
-        """Un groupe par palier : la page montre ou cache chacun avec --noms-p0, --noms-p1…"""
-        return "".join(f'<g style="visibility:var(--noms-p{k},visible)">{"".join(elements[cle(k)])}</g>'
-                       for k in range(len(config.paliers_noms)) if elements.get(cle(k)))
+        """Les éléments rangés par palier (chacun porte le sien : la page les montre ou cache avec --noms-p0…)."""
+        return "".join("".join(elements[cle(k)]) for k in range(len(config.paliers_noms)) if elements.get(cle(k)))
 
     svg = f"""<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <!-- Carte à la manière des portulans, d'après Natural Earth (domaine public). Projection de Mercator, centièmes de degré. -->
@@ -289,9 +296,9 @@ def generer(source: Source, config: Config | None = None, journal=None) -> Carte
 {rose_ornee()}
 </defs>
 <g id="terres">
-<path d="{d_terres}" style="fill:var(--terre-fond);stroke:none"/>
-<path d="{d_lacs}" style="fill:var(--lac-fond);stroke:var(--terre-trait);stroke-width:calc(var(--trait,8px) * .8);stroke-linejoin:round"/>
-<path d="{d_cotes}" style="stroke:var(--terre-trait);stroke-width:var(--trait,8px);{trait}"/>
+<g style="fill:var(--terre-fond);stroke:none">{terres}</g>
+<g style="fill:var(--lac-fond);stroke:var(--terre-trait);stroke-width:calc(var(--trait,8px) * .8);stroke-linejoin:round">{lacs}</g>
+<g style="stroke:var(--terre-trait);stroke-width:var(--trait,8px);{trait}">{cotes}</g>
 </g>
 <g id="noms" style="{texte}">
 <g style="fill:var(--nom-1);opacity:var(--noms-1,1)">{par_palier(noms, lambda k: (1, k))}</g>
@@ -308,5 +315,7 @@ def generer(source: Source, config: Config | None = None, journal=None) -> Carte
 </svg>
 """
     compte = lambda rang: sum(len(v) for (r, _), v in noms.items() if r == rang)
+    (ouest, nord), (est, sud) = dessin.projeter(-180, config.lat_max), dessin.projeter(180, config.lat_min)
     return Carte(svg=svg, noeuds=noeuds, nombre_noms=(compte(1), compte(2)),
-                 nombre_villes=sum(len(v) for v in chateaux.values()), paliers=tuple(config.paliers_noms))
+                 nombre_villes=sum(len(v) for v in chateaux.values()), paliers=tuple(config.paliers_noms),
+                 bornes=tuple(round(v) for v in (ouest, nord, est, sud)))

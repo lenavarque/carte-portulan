@@ -1,4 +1,5 @@
-"""Outils géométriques : simplification des lignes, découpage, index spatial, chemins SVG compacts."""
+"""Outils géométriques : simplification des lignes, découpage, rangement par cases, index spatial, chemins SVG
+compacts."""
 import math
 from collections.abc import Callable, Iterable, Sequence
 
@@ -34,6 +35,39 @@ def simplifier(points: Sequence[Point], tolerance: float) -> list[Point]:
     return [p for p, g in zip(points, garder) if g]
 
 
+def simplifier_par_zones(points: Sequence[Point], zones: Sequence[bool], tol_vrai: float, tol_faux: float) -> list[Point]:
+    """Simplifie une ligne morceau par morceau, avec la tolérance de la zone de chaque morceau (zones[i] : le point i
+    est-il dans la zone « vraie » ?). Le point où la zone change termine un morceau et commence le suivant : les
+    morceaux se raccordent exactement."""
+    if not points:
+        return []
+    res = [points[0]]
+    debut = 0
+    for i in range(1, len(points) + 1):
+        if i == len(points) or zones[i] != zones[debut]:
+            fin = min(i, len(points) - 1)
+            res += simplifier(points[debut:fin + 1], tol_vrai if zones[debut] else tol_faux)[1:]
+            debut = fin
+    return res
+
+
+def sans_bords(anneau: Sequence[Point], sur_bord: Callable[[Point], bool]) -> list[list[Point]]:
+    """Le contour d'un polygone en lignes, sans ses côtés posés sur le bord de la carte (les deux extrémités sur le
+    bord) : là où la carte coupe une terre (Antarctique, ±180°), il n'y a pas de côte à tracer."""
+    lignes: list[list[Point]] = []
+    courant: list[Point] = [anneau[0]] if anneau else []
+    for a, b in zip(anneau, anneau[1:]):
+        if sur_bord(a) and sur_bord(b):
+            if len(courant) > 1:
+                lignes.append(courant)
+            courant = [b]
+        else:
+            courant.append(b)
+    if len(courant) > 1:
+        lignes.append(courant)
+    return lignes
+
+
 def dans_boite(lon: float, lat: float, boite: Sequence[float]) -> bool:
     """La boîte est (longitude ouest, latitude sud, longitude est, latitude nord)."""
     return boite[0] <= lon <= boite[2] and boite[1] <= lat <= boite[3]
@@ -56,6 +90,76 @@ def morceaux(ligne: Sequence[Point], garder: Callable[[float, float], bool]) -> 
     if len(courant) > 1:
         res.append(courant)
     return res
+
+
+def couper_rectangle(anneau: Sequence[Point], x0: float, y0: float, x1: float, y1: float) -> list[Point]:
+    """Partie d'un polygone fermé comprise dans le rectangle [x0, x1] × [y0, y1] (algorithme de Sutherland-Hodgman).
+    D'un polygone concave, il peut rester des arêtes de largeur nulle le long du bord : sans effet sur un
+    remplissage, mais à ne pas tracer."""
+    poly = list(anneau[:-1] if len(anneau) > 1 and anneau[0] == anneau[-1] else anneau)
+
+    def couper(poly, dedans, croisement):
+        sortie = []
+        for i, b in enumerate(poly):
+            a = poly[i - 1]
+            if dedans(b):
+                if not dedans(a):
+                    sortie.append(croisement(a, b))
+                sortie.append(b)
+            elif dedans(a):
+                sortie.append(croisement(a, b))
+        return sortie
+
+    def en_x(xc):
+        return lambda a, b: (xc, a[1] + (b[1] - a[1]) * (xc - a[0]) / (b[0] - a[0]))
+
+    def en_y(yc):
+        return lambda a, b: (a[0] + (b[0] - a[0]) * (yc - a[1]) / (b[1] - a[1]), yc)
+
+    for dedans, croisement in ((lambda p: p[0] >= x0, en_x(x0)), (lambda p: p[0] <= x1, en_x(x1)),
+                               (lambda p: p[1] >= y0, en_y(y0)), (lambda p: p[1] <= y1, en_y(y1))):
+        if not poly:
+            break
+        poly = couper(poly, dedans, croisement)
+    return poly
+
+
+def par_cases(lignes: Iterable[Sequence[Point]], taille: float, mode: str) -> dict[tuple[int, int], list[list[Point]]]:
+    """Range des lignes par cases carrées de côté « taille ». Le navigateur ne redessine alors que les cases visibles,
+    au lieu de parcourir toute la carte pour chaque morceau d'écran. Trois façons de faire :
+    - « decouper » : des polygones, coupés au bord des cases (pour un remplissage sans contour) ;
+    - « couper » : des lignes, coupées en morceaux ; le segment qui franchit un bord reste au morceau qu'il quitte,
+      et le suivant repart de son extrémité : rien n'est tracé deux fois ;
+    - « entier » : des polygones, chacun rangé entier dans la case du centre de sa boîte (petits, et tracés)."""
+    def case(x: float, y: float) -> tuple[int, int]:
+        return math.floor(x / taille), math.floor(y / taille)
+
+    cases: dict[tuple[int, int], list[list[Point]]] = {}
+    for pts in lignes:
+        if len(pts) < 2:
+            continue
+        xs, ys = [p[0] for p in pts], [p[1] for p in pts]
+        (cx0, cy0), (cx1, cy1) = case(min(xs), min(ys)), case(max(xs), max(ys))
+        if mode == "entier" or (cx0, cy0) == (cx1, cy1):
+            k = (cx0, cy0) if mode != "entier" else case((min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2)
+            cases.setdefault(k, []).append(list(pts))
+        elif mode == "decouper":
+            for i in range(cx0, cx1 + 1):
+                for j in range(cy0, cy1 + 1):
+                    morceau = couper_rectangle(pts, i * taille, j * taille, (i + 1) * taille, (j + 1) * taille)
+                    if len(morceau) >= 3:
+                        cases.setdefault((i, j), []).append(morceau)
+        else:
+            courant, k = [pts[0]], case(*pts[0])
+            for p in pts[1:]:
+                courant.append(p)
+                suivante = case(*p)
+                if suivante != k:
+                    cases.setdefault(k, []).append(courant)
+                    courant, k = [p], suivante
+            if len(courant) > 1:
+                cases.setdefault(k, []).append(courant)
+    return cases
 
 
 def etendue(points: Sequence[Point]) -> float:

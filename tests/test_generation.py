@@ -61,6 +61,44 @@ class TestGeneration(unittest.TestCase):
     def test_terres(self):
         chemins = [p.get("d") for p in self.groupe("terres").iter(f"{SVG}path")]
         self.assertTrue(all(chemins))
+        # un tracé par case (terres, lacs, côtes), ou un seul de chaque sans découpage
+        self.assertEqual(len(self.groupe("terres")), 3)
+        sans = ET.fromstring(generer(Source(self.dossier), Config(case_terres=0)).svg).find(".//*[@id='terres']")
+        self.assertEqual(len(list(sans.iter(f"{SVG}path"))), 3)
+
+    def test_cotes_sur_les_terres(self):
+        # le trait des côtes suit exactement le bord du remplissage : mêmes points
+        import re
+        remplissage, _, trait = list(self.groupe("terres"))
+        def points(groupe):
+            res = set()
+            for p in groupe.iter(f"{SVG}path"):
+                for sous in re.findall(r"M[^M]+", p.get("d")):
+                    nombres = list(map(int, re.findall(r"-?\d+", sous)))
+                    x, y = nombres[0], nombres[1]
+                    res.add((x, y))
+                    for dx, dy in zip(nombres[2::2], nombres[3::2]):
+                        x, y = x + dx, y + dy
+                        res.add((x, y))
+            return res
+        self.assertTrue(points(trait))
+        self.assertEqual(points(trait), points(remplissage))
+
+    def test_paliers_et_vents(self):
+        # la page montre ou cache chaque nom par « display » (un nom caché n'est pas mis en page) : son palier, et
+        # --petits-noms pour les autres ports ; de même les châteaux et les noms des vents
+        styles = {t.text: t.get("style") for t in self.groupe("noms").iter(f"{SVG}text")}
+        self.assertRegex(styles["Port-Royal"], r"^display:var\(--noms-p\d,inline\)$")
+        self.assertRegex(styles["Caleta & Mar"], r"^display:var\(--petits-noms,var\(--noms-p\d,inline\)\)$")
+        self.assertTrue(all(u.get("style", "").startswith("display:var(--noms-p") for u in self.groupe("villes")))
+        vents = [t.get("style") for t in ET.fromstring(rose_ornee_autonome()).iter(f"{SVG}text")]
+        self.assertEqual(set(vents), {"display:var(--vents,inline)"})
+
+    def test_bornes(self):
+        ouest, nord, est, sud = self.carte.index()["bornes"]
+        self.assertEqual((ouest, est), (-18000, 18000))
+        self.assertLess(nord, 0)                                  # y vers le bas : le nord est négatif
+        self.assertGreater(sud, 0)
 
     def test_rhumbs_sans_doublon(self):
         """Chaque droite n'est tracée qu'une fois : aucune paire presque confondue (même direction, même place)."""

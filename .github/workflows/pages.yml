@@ -29,8 +29,7 @@ jobs:
       - name: Données Natural Earth
         run: |
           mkdir -p donnees
-          for couche in 50m/physical/ne_50m_land 10m/physical/ne_10m_coastline 50m/physical/ne_50m_coastline \
-                        50m/physical/ne_50m_lakes 10m/cultural/ne_10m_populated_places; do
+          for couche in 10m/physical/ne_10m_land 50m/physical/ne_50m_lakes 10m/cultural/ne_10m_populated_places; do
             curl -fsSL --retry 3 -o "donnees/$(basename "$couche").zip" "https://naciscdn.org/naturalearth/$couche.zip"
           done
       - name: Carte

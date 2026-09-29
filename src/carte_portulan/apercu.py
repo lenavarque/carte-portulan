@@ -36,7 +36,7 @@ def reglages_vue(largeur_degres: float, largeur_px: float, paliers: tuple[float,
     return {
         "--trait": f"{w / largeur_px:.3f}px",
         "--taille-noms": f"{taille:.2f}px",
-        **{f"--noms-p{k}": "visible" if taille <= seuil else "hidden" for k, seuil in enumerate(paliers)},
+        **{f"--noms-p{k}": "inline" if taille <= seuil else "none" for k, seuil in enumerate(paliers)},
         "--noms-1": "0" if largeur_degres > 150 else "1",
         "--noms-2": "0" if largeur_degres > 60 else "1",
         "--villes": "0" if largeur_degres > 90 else "1",

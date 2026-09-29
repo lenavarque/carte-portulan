@@ -93,7 +93,9 @@ def rose_ornee(identifiant: str | None = "rose-ornee") -> str:
         x, y = _point(107, cap)
         rotation = cap if math.cos(math.radians(cap)) >= -0.01 else cap + 180   # jamais à l'envers
         noms.append(f'<text transform="translate({x:.2f} {y:.2f}) rotate({rotation:g})" text-anchor="middle" '
-                    f'dy="2.6">{nom}</text>')
+                    f'dy="2.6" style="display:var(--vents,inline)">{nom}</text>')
+    # les noms des vents : --vents: none les cache (le navigateur remet les textes en page à chaque zoom). Posé sur
+    # chaque texte : sur le groupe, Chrome les cache mais les remet quand même en page.
     morceaux.append(f'<g style="font-family:Spectral,Georgia,serif;font-style:italic;font-size:7.5px;'
                     f'letter-spacing:.08em;fill:{ENCRE}">' + "".join(noms) + "</g>")
     morceaux.append(LYS + CROIX)

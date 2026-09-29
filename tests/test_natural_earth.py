@@ -18,7 +18,7 @@ class TestSource(unittest.TestCase):
 
     def test_dossier(self):
         monde_factice(self.dossier)
-        terres = Source(self.dossier).lire("ne_50m_land")
+        terres = Source(self.dossier).lire("ne_10m_land")
         self.assertEqual(len(terres), 1)
         geometrie, attributs = terres[0]
         self.assertEqual(geometrie[0][0], (5.0, 40.0))
@@ -46,10 +46,10 @@ class TestSource(unittest.TestCase):
         monde_factice(couches)
         telechargements = self.dossier / "telechargements"
         telechargements.mkdir()
-        with zipfile.ZipFile(telechargements / "ne_50m_land.zip", "w") as z:
+        with zipfile.ZipFile(telechargements / "ne_10m_land.zip", "w") as z:
             for ext in ("shp", "dbf", "cpg"):
-                z.write(couches / f"ne_50m_land.{ext}", f"ne_50m_land.{ext}")
-        self.assertEqual(len(Source(telechargements).lire("ne_50m_land")), 1)
+                z.write(couches / f"ne_10m_land.{ext}", f"ne_10m_land.{ext}")
+        self.assertEqual(len(Source(telechargements).lire("ne_10m_land")), 1)
 
     def test_octets_nuls(self):
         # certaines couches (les pays, en 1/10 000 000) complètent leurs champs par des octets nuls, pas des espaces
@@ -64,7 +64,7 @@ class TestSource(unittest.TestCase):
 
     def test_couche_absente(self):
         with self.assertRaises(CoucheIntrouvable):
-            Source(self.dossier).lire("ne_50m_land")
+            Source(self.dossier).lire("ne_10m_land")
 
     def test_chemin_absent(self):
         with self.assertRaises(FileNotFoundError):

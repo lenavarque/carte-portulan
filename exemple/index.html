@@ -89,7 +89,7 @@
     const taille = (10.5 * w) / innerWidth;                                   // taille des noms, en unités de la carte
     fond.style.setProperty("--taille-noms", `${taille}px`);
     // seulement les paliers de noms qui tiennent sans se chevaucher à cette taille (seuils dans portulan.json)
-    paliers.forEach((seuil, k) => fond.style.setProperty(`--noms-p${k}`, taille <= seuil ? "visible" : "hidden"));
+    paliers.forEach((seuil, k) => fond.style.setProperty(`--noms-p${k}`, taille <= seuil ? "inline" : "none"));
     fond.style.setProperty("--noms-2", largeur > 40 ? 0 : 1);                  // petits noms seulement de près
   }
 

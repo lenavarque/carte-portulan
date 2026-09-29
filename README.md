@@ -54,10 +54,8 @@ La carte est dessinée à partir de Natural Earth, dans le domaine public. Deux 
 
 - l'archive complète, [natural_earth_vector.zip](https://naciscdn.org/naturalearth/packages/natural_earth_vector.zip)
   (environ 600 Mo), à laisser telle quelle ;
-- ou seulement les cinq couches utilisées, dans un même dossier (zippées ou décompressées) :
-  [ne_50m_land](https://naciscdn.org/naturalearth/50m/physical/ne_50m_land.zip),
-  [ne_10m_coastline](https://naciscdn.org/naturalearth/10m/physical/ne_10m_coastline.zip),
-  [ne_50m_coastline](https://naciscdn.org/naturalearth/50m/physical/ne_50m_coastline.zip),
+- ou seulement les trois couches utilisées, dans un même dossier (zippées ou décompressées) :
+  [ne_10m_land](https://naciscdn.org/naturalearth/10m/physical/ne_10m_land.zip),
   [ne_50m_lakes](https://naciscdn.org/naturalearth/50m/physical/ne_50m_lakes.zip),
   [ne_10m_populated_places](https://naciscdn.org/naturalearth/10m/cultural/ne_10m_populated_places.zip).
 
@@ -71,8 +69,8 @@ Le programme écrit dans le dossier `sortie` :
 
 | Fichier | Contenu |
 |---|---|
-| `portulan.svg` | la carte (≈ 600 Ko, ≈ 230 Ko compressée par le serveur) |
-| `portulan.json` | la position des roses du réseau et les seuils des paliers des noms |
+| `portulan.svg` | la carte (≈ 900 Ko, ≈ 330 Ko compressée par le serveur) |
+| `portulan.json` | l'étendue de la carte (`bornes`), la position des roses du réseau et les seuils des paliers des noms |
 | `rose-ornee.svg` | la grande rose des vents seule |
 | `apercu.html` | une page qui montre la carte, à ouvrir directement dans un navigateur |
 
@@ -116,6 +114,14 @@ Les coordonnées sont en **centièmes de degré** : `x = longitude × 100`, `y =
 La fonction `carte_portulan.projection.vue(lon, lat, largeur, rapport)` calcule la `viewBox` d'une vue.
 Attention : `<use>` vers un autre fichier ne fonctionne qu'à travers un serveur (pas en `file://`).
 
+La carte s'arrête aux latitudes `lat_min` et `lat_max` et à ±180° de longitude : `bornes`, dans `portulan.json`,
+donne cette étendue (x ouest, y nord, x est, y sud). Une page qui laisse défiler ou zoomer la carte peut s'en servir
+pour ne jamais montrer ses bords.
+
+Terres, côtes et lacs sont découpés en cases de 10° (réglage `case_terres`) : un tracé par case. Sans cela, le
+navigateur parcourt toute la carte pour chaque morceau d'écran qu'il dessine ; ainsi, il ne dessine que les cases
+visibles, et redessine dix fois plus vite une vue régionale.
+
 Le dossier [exemple](exemple/index.html) montre une page complète, avec un fond en parallaxe
 (`python -m http.server` à la racine du projet, puis <http://localhost:8000/exemple/>).
 
@@ -131,7 +137,8 @@ Toutes les couleurs et épaisseurs viennent de variables CSS, héritées à trav
 | `--nom-1`, `--nom-2` | couleur des grands ports et des autres |
 | `--taille-noms` | taille des noms, en unités de la carte (par exemple 10,5 × `--trait`) |
 | `--noms-1`, `--noms-2` | opacité des grands et des petits noms (à baisser quand la vue est large) |
-| `--noms-p0`, `--noms-p1`… | `visible` ou `hidden` : les paliers des noms (et des châteaux), voir ci-dessous |
+| `--petits-noms` | `none` retire les petits noms (sur un petit écran, par exemple) : plus léger qu'une opacité nulle, ils ne sont pas mis en page |
+| `--noms-p0`, `--noms-p1`… | `inline` ou `none` : les paliers des noms (et des châteaux), voir ci-dessous |
 | `--ville-trait`, `--ville-fond`, `--ville-toit` | trait, remplissage et toit (et fanion) des châteaux |
 | `--villes` | opacité des châteaux |
 | `--rhumb-vent`, `--rhumb-demi`, `--rhumb-quart` | les trois encres des lignes de rhumb |
@@ -139,20 +146,28 @@ Toutes les couleurs et épaisseurs viennent de variables CSS, héritées à trav
 | `--rose-encre`, `--rose-1`, `--rose-papier` | grandes roses : traits et hachures, cinabre, face claire des branches |
 | `--rose-1`, `--rose-2`, `--rose-trait` | petites roses du réseau |
 | `--rose-centrale`, `--grandes-roses` | opacité de la rose centrale et des autres grandes roses |
+| `--vents` | `none` cache les noms des vents des grandes roses (par exemple pendant une animation) |
 
 Les traits n'utilisent pas `vector-effect: non-scaling-stroke`, qui ralentit beaucoup le navigateur quand la vue
 change : c'est à la page de recalculer `--trait`, `--taille-noms` et les paliers quand elle zoome.
+
+Pour une animation fluide, mieux vaut changer ces variables le moins souvent possible : chacune fait recalculer le
+style de tous les tracés de la carte. Pendant un zoom animé, on peut ne changer `--trait` que quand l'écart dépasse
+un tiers (un trait d'un pixel reste entre 0,75 et 1,3 pixel), et cacher les noms (y compris ceux des vents,
+`--vents: none`), que le navigateur remettrait en page à chaque image.
 
 ### Paliers des noms
 
 Les noms gardent la même taille à l'écran : de loin, ils prennent plus de place sur la carte, et se chevaucheraient.
 Chaque nom reçoit donc un palier, le premier où il a sa place ; les seuils sont dans `portulan.json` (`paliers`,
-réglage `paliers_noms`), en unités de la carte. La page montre le palier *k* (`--noms-pk: visible`) si la taille des
-noms, `--taille-noms`, ne dépasse pas le seuil *k*, et le cache sinon (`hidden`) :
+réglage `paliers_noms`), en unités de la carte. La page montre le palier *k* (`--noms-pk: inline`) si la taille des
+noms, `--taille-noms`, ne dépasse pas le seuil *k*, et le cache sinon (`none` : un palier caché n'est pas mis en
+page, ce qui compte avec des centaines de noms ; la variable est posée sur chaque nom, car sur un groupe, Chrome
+cache les textes mais les met quand même en page) :
 
 ```js
 const taille = 10.5 * largeurVue / largeurEcran;           // taille des noms, en unités de la carte
-paliers.forEach((seuil, k) => svg.style.setProperty(`--noms-p${k}`, taille <= seuil ? "visible" : "hidden"));
+paliers.forEach((seuil, k) => svg.style.setProperty(`--noms-p${k}`, taille <= seuil ? "inline" : "none"));
 ```
 
 À chaque palier, aucun nom visible n'en chevauche un autre, château compris ; en zoomant, les paliers suivants
@@ -173,7 +188,7 @@ Un fichier JSON passé à `--config` remplace les réglages par défaut (positio
 
 Les principaux réglages : `boite_detail` (zone aux côtes détaillées : ouest, sud, est, nord), `systemes` (réseaux
 de rhumbs : longitude, latitude, rayon), `portee` (longueur des lignes, en rayons), `variation_longueur`,
-`irregularite` et `lignes_manquantes` (le tracé « à la main »), `ecart_rhumbs` (deux droites parallèles plus
+`irregularite` et `lignes_manquantes` (le tracé « à la main »), `case_terres` (côté des cases des terres, en degrés), `ecart_rhumbs` (deux droites parallèles plus
 proches ne sont tracées qu'une fois), `graine` (le hasard), `paliers_noms` (seuils des paliers des noms), `chateaux`
 et `taille_chateau` (en tailles de nom), `rose_centrale` (longitude,
 latitude, rayon, ou `null`), `grandes_roses` (longitude, latitude, taille), `champ_nom` (champ du nom des villes : `NAME_FR`, `NAME_EN`, `NAME_ES`…), `rang_max_ports_detail`

@@ -17,6 +17,12 @@ et les numéros de version suivent le [versionnage sémantique](https://semver.o
   écrits dans `portulan.json`.
 - Démonstration en ligne sur GitHub Pages : la carte en plein écran, à déplacer et zoomer, avec des vues prêtes,
   des couches à masquer et la vue gardée dans l'adresse. Générée et publiée par un workflow à chaque envoi.
+- Étendue de la carte dans `portulan.json` (`bornes` : x ouest, y nord, x est, y sud), pour qu'une page n'en
+  montre jamais les bords.
+- Variable CSS `--vents` : `none` cache les noms des vents des grandes roses, que le navigateur remet en page à
+  chaque zoom (utile pendant une animation).
+- Variable CSS `--petits-noms` : `none` retire les petits noms, sans les mettre en page (plus léger que
+  `--noms-2: 0` sur un téléphone).
 
 ### Modifié
 
@@ -26,6 +32,15 @@ et les numéros de version suivent le [versionnage sémantique](https://semver.o
   n'est tracée qu'une fois : une corde est commune à deux roses, un diamètre aux deux roses opposées et à la rose
   centrale, et deux droites presque confondues de réseaux voisins n'en font qu'une (réglage `ecart_rhumbs`).
 - Plus de noms de ports (`rang_max_ports_detail` passe à 9), les petits un peu plus petits.
+- Les côtes sont le contour des terres elles-mêmes (couche `ne_10m_land`, détaillée dans la zone de détail, simplifiée
+  ailleurs) : le trait et le remplissage se superposent exactement. Les couches `ne_50m_land`, `ne_10m_coastline` et
+  `ne_50m_coastline` ne servent plus ; les réglages `couche_cotes_detail`, `couche_cotes_monde` et `taille_min_cote`
+  disparaissent (nouveau : `taille_min_terre_detail`). Là où la carte coupe une terre (72° S, ±180°), aucun trait.
+- Terres, côtes et lacs sont découpés en cases de 10° (réglage `case_terres`), un tracé par case : le navigateur ne
+  dessine plus que les cases à l'écran. Une vue régionale se redessine environ dix fois plus vite.
+- Les paliers des noms se montrent et se cachent par `display` (`--noms-p0`… valent `inline` ou `none`, au lieu de
+  `visible` ou `hidden`) : un palier caché n'est plus mis en page. La variable est posée sur chaque nom et chaque
+  château, et non plus sur un groupe par palier.
 - La grande rose est gravée à l'encre : deux couleurs, branches hachurées, anneau gradué, noms des vents en
   toutes lettres. Nouvelles variables CSS `--rose-encre` et `--rose-papier` ; `--rose-3` et `--rose-4` ne servent
   plus, `--rose-2` ne sert plus qu'aux petites roses du réseau.
